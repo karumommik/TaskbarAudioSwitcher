@@ -1325,6 +1325,37 @@ namespace TaskbarAudioSwitcher
 
         private void Form_MouseWheel(object sender, MouseEventArgs e)
         {
+            Control senderControl = sender as Control;
+            MixerRow matchedRow = null;
+            if (senderControl != null && isExpanded)
+            {
+                foreach (var row in mixerRows)
+                {
+                    if (senderControl == row.RowPanel || 
+                        senderControl == row.Slider || 
+                        senderControl == row.IconBox || 
+                        senderControl == row.IconLabel || 
+                        senderControl == row.NameLabel || 
+                        senderControl == row.VolLabel)
+                    {
+                        matchedRow = row;
+                        break;
+                    }
+                }
+            }
+
+            if (matchedRow != null)
+            {
+                float currentVal = matchedRow.Slider.Value;
+                float step = (e.Delta > 0) ? 0.02f : -0.02f;
+                float newVal = Math.Max(0.0f, Math.Min(1.0f, currentVal + step));
+
+                SetSessionVolume(matchedRow.SessionId, newVal);
+                matchedRow.Slider.UpdateValue(newVal);
+                matchedRow.VolLabel.Text = string.Format("{0:0}%", newVal * 100);
+                return;
+            }
+
             IMMDevice defaultDev = null;
             object volumeObj = null;
             IAudioEndpointVolume volume = null;
@@ -1542,9 +1573,28 @@ namespace TaskbarAudioSwitcher
                 SafeRelease(defaultDev);
             }
 
-            // Adjust form height dynamically based on session count
+            // Find current screen to limit height to screen bounds dynamically
+            Screen currentScr = null;
+            if (!string.IsNullOrEmpty(settings.ScreenDeviceName))
+            {
+                foreach (var s in Screen.AllScreens)
+                {
+                    if (s.DeviceName == settings.ScreenDeviceName)
+                    {
+                        currentScr = s;
+                        break;
+                    }
+                }
+            }
+            if (currentScr == null)
+            {
+                int scrIdx = Math.Max(0, Math.Min(Screen.AllScreens.Length - 1, settings.ScreenIndex));
+                currentScr = Screen.AllScreens[scrIdx];
+            }
+
+            int maxPanelHeight = currentScr.Bounds.Height - 120; // safe margin for taskbar and padding
             int displayCount = activeSessions.Count;
-            int calculatedPanelHeight = Math.Max(52, Math.Min(300, displayCount * 36 + 16));
+            int calculatedPanelHeight = Math.Max(52, Math.Min(maxPanelHeight, displayCount * 36 + 16));
             int newHeight = calculatedPanelHeight + 36;
             
             try {
@@ -1626,10 +1676,11 @@ namespace TaskbarAudioSwitcher
                 {
                     string sid = data.SessionId;
                     
+                    int rw = pnlMixer.Width - 24; // Ensure safe margin for vertical scrollbar and prevent horizontal scrollbar
                     Panel rowPanel = new Panel
                     {
                         Location = new Point(0, y),
-                        Size = new Size(pnlMixer.Width - 16, rowHeight),
+                        Size = new Size(rw, rowHeight),
                         BackColor = themeBgColor
                     };
                     
@@ -1675,7 +1726,7 @@ namespace TaskbarAudioSwitcher
                     };
                     rowPanel.Controls.Add(nameLabel);
                     
-                    int sliderWidth = this.Width - 112 - 40;
+                    int sliderWidth = rw - 112 - 36 - 8;
                     VolumeSlider slider = new VolumeSlider
                     {
                         Location = new Point(112, 14),
@@ -1688,7 +1739,7 @@ namespace TaskbarAudioSwitcher
                     
                     Label volLabel = new Label
                     {
-                        Location = new Point(this.Width - 36, 10),
+                        Location = new Point(rw - 36, 10),
                         Size = new Size(30, 16),
                         Font = new Font("Segoe UI", 8f),
                         ForeColor = themeTextColor,
