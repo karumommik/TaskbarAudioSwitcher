@@ -7,15 +7,19 @@ This is an extremely lightweight, stable, and convenient Windows 11 utility that
 ![Expanded Mixer Panel](TAS2.png)
 
 ## Key Features
-1. **Quick Audio Device Switching:** Switch between up to 3 selected active devices (e.g. speakers, headphones, TV) by clicking on their corresponding icons.
-2. **Volume Regulation:** Adjust volume by dragging the slider or scrolling the mouse wheel directly over the utility.
-3. **Mute/Unmute:** Mute audio with a single click.
-4. **App Volume Mixer:** Clicking the button next to the volume percentage opens a dynamic mixer above the utility, allowing you to regulate the volume of each audio-producing application (e.g., Chrome, Firefox, Spotify) individually or mute them.
-5. **Configuration View:** The settings window, opened from the system tray icon, allows you to:
-   - Select and filter which audio devices are displayed on the utility bar.
-   - Choose whether the utility is displayed to the left or right of the taskbar clock.
-   - Enable "Always on Top" mode to keep the utility visible even over fullscreen games/applications.
-   - Activate a mode that automatically moves the utility to the left edge of the second monitor when a fullscreen or borderless windowed game or application is launched, and returns it to its original position upon exiting the game.
+1. **Dynamic Audio Device Switching:** Easily cycle between audio outputs (e.g. Speakers, Headphones, HDMI) directly from your taskbar. Active icons display custom 3-letter nicknames or system abbreviations underneath. There is no hardcoded device limit – display as many outputs as you want!
+2. **Dynamic Discovery & Filtering:** By default, the utility automatically discovers and displays all active/enabled Windows audio devices (e.g. newly connected Bluetooth headphones appear instantly). You can toggle a filter in settings to display only a manually checked checklist of outputs.
+3. **Volume Regulation & Step Customization:** Drag the slider or scroll your mouse wheel anywhere over the utility bar to adjust the master volume. Customize your preferred scroll step size in settings (choose between 1%, 2%, 5%, or 10%).
+4. **App Volume Mixer:** Expand a dynamic, lightweight application volume mixer right above the taskbar. Its height automatically scales dynamically based on the monitor screen boundaries.
+   - **Individual App Mouse-Wheel Control:** Scroll directly over a specific row to adjust only that application's volume, without changing the master volume.
+   - **Hide Silent Apps:** Hide inactive/silent background audio sessions with a single checkbox to keep the mixer panel compact and clean.
+5. **Quick Monitor Switcher Button:** An optional on-bar button (toggled via settings) shifts the utility across screens. Left-click moves the utility to the next monitor to the right (placed on its left edge). Right-click moves it to the next monitor to the left (placed on its right edge). The alignment and monitor selection are saved instantly and persist across reboots.
+6. **High-DPI Per-Monitor Awareness:** Built-in dynamic DPI scale tracking. The entire widget (buttons, sliders, separators, custom fonts) automatically redraws and resizes on the fly to remain razor-sharp on screens with different scaling factors (e.g. 100%, 125%, 150%, 200%).
+7. **Configuration View:** Accessible via the system tray icon, allowing you to:
+   - Toggle manual device filtering and assign custom 3-letter nicknames for each device.
+   - Align the widget next to the clock (Right) or next to the Start button (Left).
+   - Toggle "Always on Top" and "Move to second screen on game launch" (processes stay locked to the second screen until exit).
+   - Toggle the monitor switch button visibility and configure scroll step sizes.
 
 ## Release History & Changelog
 
