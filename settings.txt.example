@@ -8,3 +8,4 @@ FilterDevices=False
 DeviceNicknames=
 HideSilentApps=False
 ScrollStep=2
+ShowScreenMoveButton=False
