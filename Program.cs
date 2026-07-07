@@ -163,6 +163,7 @@ namespace TaskbarAudioSwitcher
         public Color ActiveBgColor { get; set; }
         public Color ActiveFgColor { get; set; }
         public Color HoverBgColor { get; set; }
+        public string DeviceAbbreviation { get; set; }
 
         private bool isHovered = false;
 
@@ -232,12 +233,36 @@ namespace TaskbarAudioSwitcher
                 Color textColor = IsActive ? ActiveFgColor : ForeColor;
                 using (var brush = new SolidBrush(textColor))
                 {
-                    var sf = new StringFormat
+                    if (string.IsNullOrEmpty(DeviceAbbreviation))
                     {
-                        Alignment = StringAlignment.Center,
-                        LineAlignment = StringAlignment.Center
-                    };
-                    g.DrawString(Glyph, fontToUse, brush, new RectangleF(0, 0, Width, Height), sf);
+                        var sf = new StringFormat
+                        {
+                            Alignment = StringAlignment.Center,
+                            LineAlignment = StringAlignment.Center
+                        };
+                        g.DrawString(Glyph, fontToUse, brush, new RectangleF(0, 0, Width, Height), sf);
+                    }
+                    else
+                    {
+                        // Draw icon slightly shifted up
+                        var sfIcon = new StringFormat
+                        {
+                            Alignment = StringAlignment.Center,
+                            LineAlignment = StringAlignment.Near
+                        };
+                        g.DrawString(Glyph, fontToUse, brush, new RectangleF(0, 2, Width, Height - 12), sfIcon);
+
+                        // Draw 3-letter abbreviation at the bottom
+                        using (var textFont = new Font("Segoe UI", 6.2f, FontStyle.Regular))
+                        {
+                            var sfText = new StringFormat
+                            {
+                                Alignment = StringAlignment.Center,
+                                LineAlignment = StringAlignment.Far
+                            };
+                            g.DrawString(DeviceAbbreviation, textFont, brush, new RectangleF(0, 15, Width, 13), sfText);
+                        }
+                    }
                 }
             }
         }
@@ -380,9 +405,8 @@ namespace TaskbarAudioSwitcher
         private IMMDeviceEnumerator enumerator;
         private IPolicyConfig policyConfig;
         private AppSettings settings;
-
         // UI Controls
-        private IconButton[] btnDevices;
+        private List<IconButton> btnDevices = new List<IconButton>();
         private IconButton btnMute;
         private VolumeSlider sliderVolume;
         private Label lblVolumeText;
@@ -461,6 +485,17 @@ namespace TaskbarAudioSwitcher
             // Load Settings
             settings = AppSettings.Load();
 
+            // Auto-migrate ScreenDeviceName if empty and screens exist
+            if (string.IsNullOrEmpty(settings.ScreenDeviceName))
+            {
+                var screens = Screen.AllScreens;
+                if (settings.ScreenIndex >= 0 && settings.ScreenIndex < screens.Length)
+                {
+                    settings.ScreenDeviceName = screens[settings.ScreenIndex].DeviceName;
+                    settings.Save();
+                }
+            }
+
             // Windows settings
             this.FormBorderStyle = FormBorderStyle.None;
             this.ShowInTaskbar = false;
@@ -497,22 +532,7 @@ namespace TaskbarAudioSwitcher
             toolTip.InitialDelay = 400;
             toolTip.ReshowDelay = 100;
 
-            btnDevices = new IconButton[3];
-            for (int i = 0; i < 3; i++)
-            {
-                int index = i;
-                btnDevices[i] = new IconButton
-                {
-                    Glyph = "\uE767",
-                    Visible = false,
-                    ForeColor = themeTextColor,
-                    HoverBgColor = themeHoverBgColor,
-                    ActiveBgColor = themeActiveBgColor,
-                    ActiveFgColor = Color.White
-                };
-                btnDevices[i].Click += (s, e) => SwitchDevice(index);
-                this.Controls.Add(btnDevices[i]);
-            }
+            btnDevices = new List<IconButton>();
 
             btnMute = new IconButton
             {
@@ -569,7 +589,6 @@ namespace TaskbarAudioSwitcher
             btnMute.MouseWheel += Form_MouseWheel;
             btnMixer.MouseWheel += Form_MouseWheel;
             pnlMixer.MouseWheel += Form_MouseWheel;
-            foreach (var btn in btnDevices) btn.MouseWheel += Form_MouseWheel;
             // Auto-collapse mixer when clicking outside (deactivation)
             this.Deactivate += (s, e) => {
                 if (isExpanded) ToggleMixer();
@@ -731,13 +750,14 @@ namespace TaskbarAudioSwitcher
             }
             if (btnDevices != null)
             {
-                for (int i = 0; i < 3; i++)
+                foreach (var btn in btnDevices)
                 {
-                    if (btnDevices[i] != null)
+                    if (btn != null)
                     {
-                        btnDevices[i].BackColor = themeBgColor;
-                        btnDevices[i].ForeColor = themeTextColor;
-                        btnDevices[i].HoverBgColor = themeHoverBgColor;
+                        btn.BackColor = themeBgColor;
+                        btn.ForeColor = themeTextColor;
+                        btn.HoverBgColor = themeHoverBgColor;
+                        btn.ActiveBgColor = themeActiveBgColor;
                     }
                 }
             }
@@ -866,17 +886,17 @@ namespace TaskbarAudioSwitcher
                         }
                     }
 
-                    // Fallback to first 3 active devices if the filtered list is empty
+                    // Fallback to all active devices if the filtered list is empty
                     if (finalIds.Count == 0)
                     {
-                        for (int i = 0; i < Math.Min(3, allActiveIds.Count); i++)
+                        for (int i = 0; i < allActiveIds.Count; i++)
                         {
                             finalIds.Add(allActiveIds[i]);
                             finalNames.Add(allActiveNames[i]);
                         }
                     }
 
-                    int visibleCount = Math.Min(3, finalIds.Count);
+                    int visibleCount = finalIds.Count;
                     string[] newIds = new string[visibleCount];
                     string[] newNames = new string[visibleCount];
 
@@ -937,7 +957,28 @@ namespace TaskbarAudioSwitcher
                     if (changed || true)
                     {
                         activeDeviceIds = newIds;
-                        for (int i = 0; i < 3; i++)
+
+                        // Ensure we have enough buttons in the list
+                        while (btnDevices.Count < visibleCount)
+                        {
+                            int index = btnDevices.Count;
+                            IconButton btn = new IconButton
+                            {
+                                Glyph = "\uE767",
+                                Visible = false,
+                                ForeColor = themeTextColor,
+                                HoverBgColor = themeHoverBgColor,
+                                ActiveBgColor = themeActiveBgColor,
+                                ActiveFgColor = Color.White
+                            };
+                            btn.Click += (s, e) => SwitchDevice(index);
+                            btn.MouseWheel += Form_MouseWheel;
+                            this.Controls.Add(btn);
+                            btnDevices.Add(btn);
+                        }
+
+                        // Update buttons
+                        for (int i = 0; i < btnDevices.Count; i++)
                         {
                             if (i < visibleCount)
                             {
@@ -946,6 +987,10 @@ namespace TaskbarAudioSwitcher
                                 btnDevices[i].Visible = true;
                                 btnDevices[i].IsActive = (devId == currentDefaultId);
                                 toolTip.SetToolTip(btnDevices[i], name);
+
+                                string cleanName = name.Trim();
+                                string abbrev = cleanName.Length > 0 ? cleanName.Substring(0, Math.Min(3, cleanName.Length)).ToUpper() : "";
+                                btnDevices[i].DeviceAbbreviation = abbrev;
 
                                 string lowerName = name.ToLower();
                                 if (lowerName.Contains("headphone") || lowerName.Contains("headset") || lowerName.Contains("earphone") || lowerName.Contains("klapid"))
@@ -995,11 +1040,11 @@ namespace TaskbarAudioSwitcher
             int currentX = 8;
             int visibleCount = 0;
 
-            for (int i = 0; i < 3; i++)
+            foreach (var btn in btnDevices)
             {
-                if (btnDevices[i].Visible)
+                if (btn.Visible)
                 {
-                    btnDevices[i].Location = new Point(currentX, baseY + 4);
+                    btn.Location = new Point(currentX, baseY + 4);
                     currentX += 28 + 4;
                     visibleCount++;
                 }
@@ -2180,7 +2225,7 @@ namespace TaskbarAudioSwitcher
             // Title Label for Devices
             Label lblDevices = new Label
             {
-                Text = "Select audio devices to display (up to 3):",
+                Text = "Select audio devices to display:",
                 Location = new Point(20, 15),
                 Size = new Size(340, 20),
                 Font = new Font("Segoe UI", 9f, FontStyle.Bold)
