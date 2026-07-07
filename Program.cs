@@ -396,6 +396,8 @@ namespace TaskbarAudioSwitcher
         private IconButton btnMixer;
         private List<MixerRow> mixerRows = new List<MixerRow>();
         private int gcCounter = 0;
+        private uint activeFullscreenProcessId = 0;
+        private string activeFullscreenScreenDeviceName = null;
 
         private class MixerRow
         {
@@ -1069,14 +1071,62 @@ namespace TaskbarAudioSwitcher
                 this.Visible = true;
             }
 
-            int scrIdx = Math.Max(0, Math.Min(Screen.AllScreens.Length - 1, settings.ScreenIndex));
-            Screen scr = Screen.AllScreens[scrIdx];
+            Screen scr = null;
+            if (!string.IsNullOrEmpty(settings.ScreenDeviceName))
+            {
+                foreach (var s in Screen.AllScreens)
+                {
+                    if (s.DeviceName == settings.ScreenDeviceName)
+                    {
+                        scr = s;
+                        break;
+                    }
+                }
+            }
+            if (scr == null)
+            {
+                int scrIdx = Math.Max(0, Math.Min(Screen.AllScreens.Length - 1, settings.ScreenIndex));
+                scr = Screen.AllScreens[scrIdx];
+            }
 
             bool isMovedToSecond = false;
             if (settings.MoveOnFullscreen && Screen.AllScreens.Length > 1)
             {
-                Screen gameScreen;
-                if (IsForegroundWindowFullscreen(out gameScreen))
+                bool processIsStillActive = false;
+                if (activeFullscreenProcessId != 0)
+                {
+                    processIsStillActive = IsProcessRunning(activeFullscreenProcessId);
+                }
+
+                Screen gameScreen = null;
+                if (processIsStillActive && !string.IsNullOrEmpty(activeFullscreenScreenDeviceName))
+                {
+                    foreach (var s in Screen.AllScreens)
+                    {
+                        if (s.DeviceName == activeFullscreenScreenDeviceName)
+                        {
+                            gameScreen = s;
+                            break;
+                        }
+                    }
+                }
+
+                if (gameScreen == null)
+                {
+                    uint newProcId;
+                    if (IsForegroundWindowFullscreen(out gameScreen, out newProcId))
+                    {
+                        activeFullscreenProcessId = newProcId;
+                        activeFullscreenScreenDeviceName = gameScreen != null ? gameScreen.DeviceName : null;
+                    }
+                    else
+                    {
+                        activeFullscreenProcessId = 0;
+                        activeFullscreenScreenDeviceName = null;
+                    }
+                }
+
+                if (gameScreen != null)
                 {
                     Screen targetScr = null;
                     foreach (var s in Screen.AllScreens)
@@ -1889,9 +1939,28 @@ namespace TaskbarAudioSwitcher
             return sb.ToString();
         }
 
-        private bool IsForegroundWindowFullscreen(out Screen onScreen)
+        [DllImport("user32.dll", SetLastError = true)]
+        private static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint lpdwProcessId);
+
+        private bool IsProcessRunning(uint processId)
+        {
+            try
+            {
+                using (var proc = System.Diagnostics.Process.GetProcessById((int)processId))
+                {
+                    return !proc.HasExited;
+                }
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private bool IsForegroundWindowFullscreen(out Screen onScreen, out uint processId)
         {
             onScreen = null;
+            processId = 0;
             IntPtr hwnd = GetForegroundWindow();
             if (hwnd == IntPtr.Zero || hwnd == this.Handle) return false;
 
@@ -1915,6 +1984,7 @@ namespace TaskbarAudioSwitcher
                         rect.Bottom >= scr.Bounds.Bottom - 4)
                     {
                         onScreen = scr;
+                        GetWindowThreadProcessId(hwnd, out processId);
                         return true;
                     }
                 }
@@ -1938,6 +2008,7 @@ namespace TaskbarAudioSwitcher
     {
         public string DisplayDevices = "";
         public int ScreenIndex = 0;
+        public string ScreenDeviceName = "";
         public string Alignment = "Right";
         public bool AlwaysOnTop = true;
         public bool MoveOnFullscreen = false;
@@ -1965,6 +2036,7 @@ namespace TaskbarAudioSwitcher
                             string val = parts[1].Trim();
                             if (key == "DisplayDevices") s.DisplayDevices = val;
                             else if (key == "ScreenIndex") int.TryParse(val, out s.ScreenIndex);
+                            else if (key == "ScreenDeviceName") s.ScreenDeviceName = val;
                             else if (key == "Alignment") s.Alignment = val;
                             else if (key == "AlwaysOnTop") bool.TryParse(val, out s.AlwaysOnTop);
                             else if (key == "MoveOnFullscreen") bool.TryParse(val, out s.MoveOnFullscreen);
@@ -1983,6 +2055,7 @@ namespace TaskbarAudioSwitcher
                 var lines = new List<string>();
                 lines.Add("DisplayDevices=" + DisplayDevices);
                 lines.Add("ScreenIndex=" + ScreenIndex);
+                lines.Add("ScreenDeviceName=" + ScreenDeviceName);
                 lines.Add("Alignment=" + Alignment);
                 lines.Add("AlwaysOnTop=" + AlwaysOnTop);
                 lines.Add("MoveOnFullscreen=" + MoveOnFullscreen);
@@ -2086,15 +2159,21 @@ namespace TaskbarAudioSwitcher
             this.Controls.Add(cmbScreen);
 
             var screens = Screen.AllScreens;
+            int selectedIdx = 0;
             for (int i = 0; i < screens.Length; i++)
             {
                 string suffix = screens[i].Primary ? " (Primary)" : "";
                 cmbScreen.Items.Add(string.Format("Screen {0}{1} - {2}x{3}", i + 1, suffix, screens[i].Bounds.Width, screens[i].Bounds.Height));
+                if (!string.IsNullOrEmpty(settings.ScreenDeviceName) && screens[i].DeviceName == settings.ScreenDeviceName)
+                {
+                    selectedIdx = i;
+                }
             }
-            if (settings.ScreenIndex >= 0 && settings.ScreenIndex < screens.Length)
-                cmbScreen.SelectedIndex = settings.ScreenIndex;
-            else
-                cmbScreen.SelectedIndex = 0;
+            if (selectedIdx == 0 && settings.ScreenIndex >= 0 && settings.ScreenIndex < screens.Length)
+            {
+                selectedIdx = settings.ScreenIndex;
+            }
+            cmbScreen.SelectedIndex = selectedIdx;
 
             // Alignment Label & Dropdown
             Label lblAlignment = new Label
@@ -2256,6 +2335,10 @@ namespace TaskbarAudioSwitcher
 
             settings.DisplayDevices = string.Join(",", checkedIds.ToArray());
             settings.ScreenIndex = cmbScreen.SelectedIndex;
+            if (cmbScreen.SelectedIndex >= 0 && cmbScreen.SelectedIndex < Screen.AllScreens.Length)
+            {
+                settings.ScreenDeviceName = Screen.AllScreens[cmbScreen.SelectedIndex].DeviceName;
+            }
             settings.Alignment = cmbAlignment.SelectedIndex == 1 ? "Left" : "Right";
             settings.AlwaysOnTop = cbAlwaysOnTop.Checked;
             settings.MoveOnFullscreen = cbMoveOnFullscreen.Checked;
