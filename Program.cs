@@ -422,6 +422,7 @@ namespace TaskbarAudioSwitcher
         private bool isExpanded = false;
         private Panel pnlMixer;
         private IconButton btnMixer;
+        private IconButton btnScreenMove;
         private List<MixerRow> mixerRows = new List<MixerRow>();
         private int gcCounter = 0;
         private uint activeFullscreenProcessId = 0;
@@ -577,6 +578,18 @@ namespace TaskbarAudioSwitcher
             btnMixer.Click += (s, e) => ToggleMixer();
             this.Controls.Add(btnMixer);
 
+            btnScreenMove = new IconButton
+            {
+                Glyph = "\uE7F4", // Monitor symbol
+                ForeColor = themeTextColor,
+                HoverBgColor = themeHoverBgColor,
+                ActiveBgColor = Color.Transparent,
+                IsActive = false,
+                Visible = settings.ShowScreenMoveButton
+            };
+            btnScreenMove.MouseDown += BtnScreenMove_MouseDown;
+            this.Controls.Add(btnScreenMove);
+
             pnlMixer = new Panel
             {
                 Location = new Point(0, 0),
@@ -592,6 +605,7 @@ namespace TaskbarAudioSwitcher
             sliderVolume.MouseWheel += Form_MouseWheel;
             btnMute.MouseWheel += Form_MouseWheel;
             btnMixer.MouseWheel += Form_MouseWheel;
+            btnScreenMove.MouseWheel += Form_MouseWheel;
             pnlMixer.MouseWheel += Form_MouseWheel;
             // Auto-collapse mixer when clicking outside (deactivation)
             this.Deactivate += (s, e) => {
@@ -771,6 +785,12 @@ namespace TaskbarAudioSwitcher
                 btnMixer.BackColor = themeBgColor;
                 btnMixer.ForeColor = themeTextColor;
                 btnMixer.HoverBgColor = themeHoverBgColor;
+            }
+            if (btnScreenMove != null)
+            {
+                btnScreenMove.BackColor = themeBgColor;
+                btnScreenMove.ForeColor = themeTextColor;
+                btnScreenMove.HoverBgColor = themeHoverBgColor;
             }
             if (pnlMixer != null)
             {
@@ -1100,6 +1120,17 @@ namespace TaskbarAudioSwitcher
                 btnMixer.Size = new Size(btnSize, btnSize);
                 btnMixer.Location = new Point(currentX, baseY + margin);
                 currentX += btnSize + margin;
+            }
+
+            if (btnScreenMove != null)
+            {
+                btnScreenMove.Visible = settings.ShowScreenMoveButton;
+                if (btnScreenMove.Visible)
+                {
+                    btnScreenMove.Size = new Size(btnSize, btnSize);
+                    btnScreenMove.Location = new Point(currentX, baseY + margin);
+                    currentX += btnSize + margin;
+                }
             }
 
             int totalWidth = currentX + margin;
@@ -1476,6 +1507,61 @@ namespace TaskbarAudioSwitcher
                 SafeRelease(volumeObj);
                 SafeRelease(defaultDev);
             }
+        }
+
+        private void BtnScreenMove_MouseDown(object sender, MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Left)
+            {
+                ShiftScreen(true);
+            }
+            else if (e.Button == MouseButtons.Right)
+            {
+                ShiftScreen(false);
+            }
+        }
+
+        private void ShiftScreen(bool nextRight)
+        {
+            var screens = Screen.AllScreens;
+            if (screens.Length <= 1) return;
+
+            // Sort screens horizontally by their Left boundary
+            var sorted = new List<Screen>(screens);
+            sorted.Sort((a, b) => a.Bounds.Left.CompareTo(b.Bounds.Left));
+
+            // Find current screen index in sorted list
+            int currentIdx = 0;
+            string currentDeviceName = settings.ScreenDeviceName;
+            
+            for (int i = 0; i < sorted.Count; i++)
+            {
+                if (sorted[i].DeviceName == currentDeviceName)
+                {
+                    currentIdx = i;
+                    break;
+                }
+            }
+
+            int nextIdx;
+            if (nextRight)
+            {
+                nextIdx = (currentIdx + 1) % sorted.Count;
+                settings.Alignment = "Left";
+            }
+            else
+            {
+                nextIdx = (currentIdx - 1 + sorted.Count) % sorted.Count;
+                settings.Alignment = "Right";
+            }
+
+            settings.ScreenIndex = nextIdx;
+            settings.ScreenDeviceName = sorted[nextIdx].DeviceName;
+            settings.Save();
+
+            // Refresh layout & position
+            UpdateLayout();
+            UpdatePosition();
         }
 
         private int GetCollapsedHeight()
@@ -2215,6 +2301,7 @@ namespace TaskbarAudioSwitcher
         public string DeviceNicknames = "";
         public bool HideSilentApps = false;
         public int ScrollStep = 2;
+        public bool ShowScreenMoveButton = false;
 
         private static string GetFilePath()
         {
@@ -2247,6 +2334,7 @@ namespace TaskbarAudioSwitcher
                             else if (key == "DeviceNicknames") s.DeviceNicknames = val;
                             else if (key == "HideSilentApps") bool.TryParse(val, out s.HideSilentApps);
                             else if (key == "ScrollStep") int.TryParse(val, out s.ScrollStep);
+                            else if (key == "ShowScreenMoveButton") bool.TryParse(val, out s.ShowScreenMoveButton);
                         }
                     }
                 }
@@ -2270,6 +2358,7 @@ namespace TaskbarAudioSwitcher
                 lines.Add("DeviceNicknames=" + DeviceNicknames);
                 lines.Add("HideSilentApps=" + HideSilentApps);
                 lines.Add("ScrollStep=" + ScrollStep);
+                lines.Add("ShowScreenMoveButton=" + ShowScreenMoveButton);
                 System.IO.File.WriteAllLines(GetFilePath(), lines.ToArray());
             }
             catch { }
@@ -2311,6 +2400,7 @@ namespace TaskbarAudioSwitcher
         private ComboBox cmbAlignment;
         private CheckBox cbAlwaysOnTop;
         private CheckBox cbMoveOnFullscreen;
+        private CheckBox cbShowScreenMove;
         private ComboBox cmbScrollStep;
         private Button btnSave;
         private Button btnCancel;
@@ -2335,7 +2425,7 @@ namespace TaskbarAudioSwitcher
 
             // Setup Window
             this.Text = "Settings - Taskbar Audio Switcher";
-            this.Size = new Size(380, 530);
+            this.Size = new Size(380, 560);
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
             this.MinimizeBox = false;
@@ -2461,7 +2551,7 @@ namespace TaskbarAudioSwitcher
             cbAlwaysOnTop = new CheckBox
             {
                 Text = "Always on Top (even over fullscreen)",
-                Location = new Point(20, 330),
+                Location = new Point(20, 320),
                 Size = new Size(325, 24),
                 Checked = settings.AlwaysOnTop,
                 Font = new Font("Segoe UI", 9f, FontStyle.Bold),
@@ -2473,7 +2563,7 @@ namespace TaskbarAudioSwitcher
             cbMoveOnFullscreen = new CheckBox
             {
                 Text = "Move to second screen on game launch",
-                Location = new Point(20, 360),
+                Location = new Point(20, 345),
                 Size = new Size(325, 24),
                 Checked = settings.MoveOnFullscreen,
                 Font = new Font("Segoe UI", 9f, FontStyle.Bold),
@@ -2481,11 +2571,34 @@ namespace TaskbarAudioSwitcher
             };
             this.Controls.Add(cbMoveOnFullscreen);
 
+            // Show Screen Move Checkbox
+            cbShowScreenMove = new CheckBox
+            {
+                Text = "Show monitor switch button on the bar",
+                Location = new Point(20, 370),
+                Size = new Size(325, 24),
+                Checked = settings.ShowScreenMoveButton,
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+                FlatStyle = FlatStyle.Flat
+            };
+            this.Controls.Add(cbShowScreenMove);
+
+            // Description Label for Screen Move
+            Label lblScreenMoveDesc = new Label
+            {
+                Text = "Left-click: Move to next monitor on the right (docked to left edge).\r\nRight-click: Move to next monitor on the left (docked to right edge).",
+                Location = new Point(40, 394),
+                Size = new Size(305, 30),
+                Font = new Font("Segoe UI", 7.5f, FontStyle.Regular),
+                ForeColor = isDarkMode ? Color.FromArgb(170, 170, 170) : Color.FromArgb(100, 100, 100)
+            };
+            this.Controls.Add(lblScreenMoveDesc);
+
             // Scroll Step Label & Dropdown
             Label lblScrollStep = new Label
             {
                 Text = "Scroll volume step:",
-                Location = new Point(20, 392),
+                Location = new Point(20, 432),
                 Size = new Size(170, 20),
                 Font = new Font("Segoe UI", 9f, FontStyle.Bold)
             };
@@ -2493,7 +2606,7 @@ namespace TaskbarAudioSwitcher
 
             cmbScrollStep = new ComboBox
             {
-                Location = new Point(200, 390),
+                Location = new Point(200, 430),
                 Size = new Size(145, 24),
                 DropDownStyle = ComboBoxStyle.DropDownList,
                 BackColor = controlBg,
@@ -2515,7 +2628,7 @@ namespace TaskbarAudioSwitcher
             btnSave = new Button
             {
                 Text = "Save",
-                Location = new Point(155, 440),
+                Location = new Point(155, 475),
                 Size = new Size(90, 30),
                 BackColor = Color.FromArgb(0, 120, 215),
                 ForeColor = Color.White,
@@ -2529,7 +2642,7 @@ namespace TaskbarAudioSwitcher
             btnCancel = new Button
             {
                 Text = "Cancel",
-                Location = new Point(255, 440),
+                Location = new Point(255, 475),
                 Size = new Size(90, 30),
                 BackColor = btnBg,
                 ForeColor = textColor,
@@ -2645,6 +2758,7 @@ namespace TaskbarAudioSwitcher
             settings.Alignment = cmbAlignment.SelectedIndex == 1 ? "Left" : "Right";
             settings.AlwaysOnTop = cbAlwaysOnTop.Checked;
             settings.MoveOnFullscreen = cbMoveOnFullscreen.Checked;
+            settings.ShowScreenMoveButton = cbShowScreenMove.Checked;
 
             if (cmbScrollStep.SelectedIndex == 0) settings.ScrollStep = 1;
             else if (cmbScrollStep.SelectedIndex == 2) settings.ScrollStep = 5;
