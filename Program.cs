@@ -195,6 +195,7 @@ namespace TaskbarAudioSwitcher
             var g = e.Graphics;
             g.SmoothingMode = SmoothingMode.AntiAlias;
 
+            float scale = DpiHelper.GetScale(this.Handle);
             Color bg = Color.Transparent;
             Color border = Color.Transparent;
 
@@ -208,11 +209,12 @@ namespace TaskbarAudioSwitcher
                 bg = HoverBgColor;
             }
 
+            int radius = (int)(4 * scale);
             if (bg != Color.Transparent)
             {
                 using (var brush = new SolidBrush(bg))
                 {
-                    g.FillRoundRectangle(brush, 0, 0, Width - 1, Height - 1, 4);
+                    g.FillRoundRectangle(brush, 0, 0, Width - 1, Height - 1, radius);
                 }
             }
 
@@ -220,13 +222,13 @@ namespace TaskbarAudioSwitcher
             {
                 using (var pen = new Pen(border, 1f))
                 {
-                    g.DrawRoundRectangle(pen, 0, 0, Width - 1, Height - 1, 4);
+                    g.DrawRoundRectangle(pen, 0, 0, Width - 1, Height - 1, radius);
                 }
             }
 
             Font fontToUse = null;
-            try { fontToUse = new Font("Segoe MDL2 Assets", 10f); }
-            catch { fontToUse = new Font("Segoe UI", 10f); }
+            try { fontToUse = new Font("Segoe MDL2 Assets", 10f * scale); }
+            catch { fontToUse = new Font("Segoe UI", 10f * scale); }
 
             using (fontToUse)
             {
@@ -250,17 +252,17 @@ namespace TaskbarAudioSwitcher
                             Alignment = StringAlignment.Center,
                             LineAlignment = StringAlignment.Near
                         };
-                        g.DrawString(Glyph, fontToUse, brush, new RectangleF(0, 2, Width, Height - 12), sfIcon);
+                        g.DrawString(Glyph, fontToUse, brush, new RectangleF(0, 2 * scale, Width, Height - 12 * scale), sfIcon);
 
                         // Draw 3-letter abbreviation at the bottom
-                        using (var textFont = new Font("Segoe UI", 6.2f, FontStyle.Regular))
+                        using (var textFont = new Font("Segoe UI", 6.2f * scale, FontStyle.Regular))
                         {
                             var sfText = new StringFormat
                             {
                                 Alignment = StringAlignment.Center,
                                 LineAlignment = StringAlignment.Far
                             };
-                            g.DrawString(DeviceAbbreviation, textFont, brush, new RectangleF(0, 15, Width, 13), sfText);
+                            g.DrawString(DeviceAbbreviation, textFont, brush, new RectangleF(0, 15 * scale, Width, 13 * scale), sfText);
                         }
                     }
                 }
@@ -316,15 +318,16 @@ namespace TaskbarAudioSwitcher
             var g = e.Graphics;
             g.SmoothingMode = SmoothingMode.AntiAlias;
 
-            int trackHeight = 4;
+            float scale = DpiHelper.GetScale(this.Handle);
+            int trackHeight = (int)(4 * scale);
             int y = (Height - trackHeight) / 2;
-            int x = 6;
-            int w = Width - 12;
+            int x = (int)(6 * scale);
+            int w = Width - x * 2;
 
             // Inactive track
             using (var brush = new SolidBrush(InactiveColor))
             {
-                g.FillRoundRectangle(brush, x, y, w, trackHeight, 2);
+                g.FillRoundRectangle(brush, x, y, w, trackHeight, (int)(2 * scale));
             }
 
             // Active track
@@ -333,12 +336,12 @@ namespace TaskbarAudioSwitcher
             {
                 using (var brush = new SolidBrush(ActiveColor))
                 {
-                    g.FillRoundRectangle(brush, x, y, activeWidth, trackHeight, 2);
+                    g.FillRoundRectangle(brush, x, y, activeWidth, trackHeight, (int)(2 * scale));
                 }
             }
 
             // Thumb
-            int thumbRadius = 6;
+            int thumbRadius = (int)(6 * scale);
             int thumbX = x + activeWidth;
             int thumbY = Height / 2;
 
@@ -346,7 +349,7 @@ namespace TaskbarAudioSwitcher
             {
                 g.FillEllipse(brush, thumbX - thumbRadius, thumbY - thumbRadius, thumbRadius * 2, thumbRadius * 2);
             }
-            using (var pen = new Pen(ActiveColor, 2))
+            using (var pen = new Pen(ActiveColor, (int)(2 * scale)))
             {
                 g.DrawEllipse(pen, thumbX - thumbRadius, thumbY - thumbRadius, thumbRadius * 2, thumbRadius * 2);
             }
@@ -383,8 +386,9 @@ namespace TaskbarAudioSwitcher
 
         private void UpdateValueFromMouse(int mouseX)
         {
-            int x = 6;
-            int w = Width - 12;
+            float scale = DpiHelper.GetScale(this.Handle);
+            int x = (int)(6 * scale);
+            int w = Width - x * 2;
             float val = (float)(mouseX - x) / w;
             val = Math.Max(0.0f, Math.Min(1.0f, val));
             if (value != val)
@@ -422,6 +426,8 @@ namespace TaskbarAudioSwitcher
         private int gcCounter = 0;
         private uint activeFullscreenProcessId = 0;
         private string activeFullscreenScreenDeviceName = null;
+        private System.Windows.Forms.Timer animationTimer;
+        private int animationTargetHeight = 36;
 
         private class MixerRow
         {
@@ -596,6 +602,9 @@ namespace TaskbarAudioSwitcher
             updateTimer = new System.Windows.Forms.Timer { Interval = 500 };
             updateTimer.Tick += UpdateTimer_Tick;
             updateTimer.Start();
+
+            animationTimer = new System.Windows.Forms.Timer { Interval = 10 };
+            animationTimer.Tick += AnimationTimer_Tick;
 
             // Initial alignment and populate
             RefreshAudioState();
@@ -998,8 +1007,7 @@ namespace TaskbarAudioSwitcher
                                 btnDevices[i].IsActive = (devId == currentDefaultId);
                                 toolTip.SetToolTip(btnDevices[i], name);
 
-                                string cleanName = name.Trim();
-                                string abbrev = cleanName.Length > 0 ? cleanName.Substring(0, Math.Min(3, cleanName.Length)).ToUpper() : "";
+                                string abbrev = settings.GetDeviceNickname(devId, name);
                                 btnDevices[i].DeviceAbbreviation = abbrev;
 
                                 string lowerName = name.ToLower();
@@ -1046,45 +1054,59 @@ namespace TaskbarAudioSwitcher
 
         private void UpdateLayout()
         {
-            int baseY = this.Height - 36;
-            int currentX = 8;
+            float scale = DpiHelper.GetScale(this.Handle);
+            int collapsedH = (int)(36 * scale);
+            int btnSize = (int)(28 * scale);
+            int sliderW = (int)(70 * scale);
+            int margin = (int)(4 * scale);
+            int padding = (int)(8 * scale);
+            int textW = (int)(32 * scale);
+
+            int baseY = this.Height - collapsedH;
+            int currentX = padding;
             int visibleCount = 0;
 
             foreach (var btn in btnDevices)
             {
                 if (btn.Visible)
                 {
-                    btn.Location = new Point(currentX, baseY + 4);
-                    currentX += 28 + 4;
+                    btn.Size = new Size(btnSize, btnSize);
+                    btn.Location = new Point(currentX, baseY + margin);
+                    currentX += btnSize + margin;
                     visibleCount++;
                 }
             }
 
             if (visibleCount > 0)
             {
-                currentX -= 4;
+                currentX -= margin;
             }
 
-            currentX += 8;
+            currentX += padding;
             separatorX = currentX;
 
-            currentX += 1 + 8;
-            btnMute.Location = new Point(currentX, baseY + 4);
+            currentX += (int)(1 * scale) + padding;
+            btnMute.Size = new Size(btnSize, btnSize);
+            btnMute.Location = new Point(currentX, baseY + margin);
 
-            currentX += 28 + 4;
-            sliderVolume.Location = new Point(currentX, baseY + 8);
+            currentX += btnSize + margin;
+            sliderVolume.Size = new Size(sliderW, (int)(20 * scale));
+            sliderVolume.Location = new Point(currentX, baseY + (int)(8 * scale));
 
-            currentX += 70 + 4;
-            lblVolumeText.Location = new Point(currentX, baseY + 10);
+            currentX += sliderW + margin;
+            lblVolumeText.Font = new Font("Segoe UI", 8f * scale, FontStyle.Regular);
+            lblVolumeText.Size = new Size(textW, (int)(16 * scale));
+            lblVolumeText.Location = new Point(currentX, baseY + (int)(10 * scale));
 
-            currentX += 32 + 4;
+            currentX += textW + margin;
             if (btnMixer != null)
             {
-                btnMixer.Location = new Point(currentX, baseY + 4);
-                currentX += 28 + 4;
+                btnMixer.Size = new Size(btnSize, btnSize);
+                btnMixer.Location = new Point(currentX, baseY + margin);
+                currentX += btnSize + margin;
             }
 
-            int totalWidth = currentX + 4;
+            int totalWidth = currentX + margin;
             if (this.Width != totalWidth)
             {
                 this.Width = totalWidth;
@@ -1094,8 +1116,8 @@ namespace TaskbarAudioSwitcher
 
             if (pnlMixer != null)
             {
-                pnlMixer.Location = new Point(4, 4);
-                pnlMixer.Size = new Size(totalWidth - 8, Math.Max(10, baseY - 8));
+                pnlMixer.Location = new Point(margin, margin);
+                pnlMixer.Size = new Size(totalWidth - margin * 2, Math.Max(10, baseY - margin * 2));
                 try {
                     System.IO.File.AppendAllText(
                         System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "mixerlog.txt"),
@@ -1405,7 +1427,7 @@ namespace TaskbarAudioSwitcher
             if (matchedRow != null)
             {
                 float currentVal = matchedRow.Slider.Value;
-                float step = (e.Delta > 0) ? 0.02f : -0.02f;
+                float step = (e.Delta > 0) ? (settings.ScrollStep / 100f) : -(settings.ScrollStep / 100f);
                 float newVal = Math.Max(0.0f, Math.Min(1.0f, currentVal + step));
 
                 SetSessionVolume(matchedRow.SessionId, newVal);
@@ -1440,7 +1462,7 @@ namespace TaskbarAudioSwitcher
                         float currentVal;
                         volume.GetMasterVolumeLevelScalar(out currentVal);
 
-                        float step = (e.Delta > 0) ? 0.02f : -0.02f;
+                        float step = (e.Delta > 0) ? (settings.ScrollStep / 100f) : -(settings.ScrollStep / 100f);
                         float newVal = Math.Max(0.0f, Math.Min(1.0f, currentVal + step));
 
                         Guid eventContext = Guid.Empty;
@@ -1460,6 +1482,53 @@ namespace TaskbarAudioSwitcher
             }
         }
 
+        private int GetCollapsedHeight()
+        {
+            return (int)(36 * DpiHelper.GetScale(this.Handle));
+        }
+
+        private void StartHeightAnimation(int targetHeight)
+        {
+            animationTargetHeight = targetHeight;
+            animationTimer.Stop();
+            animationTimer.Start();
+        }
+
+        private void AnimationTimer_Tick(object sender, EventArgs e)
+        {
+            float scale = DpiHelper.GetScale(this.Handle);
+            int stepVal = (int)(16 * scale);
+            if (stepVal < 1) stepVal = 1;
+
+            int diff = animationTargetHeight - this.Height;
+            if (Math.Abs(diff) <= stepVal)
+            {
+                this.Height = animationTargetHeight;
+                animationTimer.Stop();
+
+                // If we finished animating down to closed state
+                if (animationTargetHeight == GetCollapsedHeight())
+                {
+                    pnlMixer.Visible = false;
+                    ClearMixerRows();
+                    // Immediately sweep memory when mixer closes
+                    GC.Collect();
+                    GC.WaitForPendingFinalizers();
+                    GC.Collect();
+                }
+
+                UpdateLayout();
+                UpdatePosition();
+            }
+            else
+            {
+                int step = (diff > 0) ? stepVal : -stepVal;
+                this.Height += step;
+                UpdateLayout();
+                UpdatePosition();
+            }
+        }
+
         private void ToggleMixer()
         {
             isExpanded = !isExpanded;
@@ -1473,16 +1542,8 @@ namespace TaskbarAudioSwitcher
             else
             {
                 try { System.IO.File.WriteAllText(System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "mixerlog.txt"), "--- Mixer Closed ---\n"); } catch {}
-                pnlMixer.Visible = false;
-                this.Height = 36;
-                UpdateLayout();
-                UpdatePosition();
-                ClearMixerRows();
-
-                // Immediately sweep memory when mixer closes
-                GC.Collect();
-                GC.WaitForPendingFinalizers();
-                GC.Collect();
+                // Start collapse animation to collapsed height
+                StartHeightAnimation(GetCollapsedHeight());
             }
         }
 
@@ -1550,6 +1611,12 @@ namespace TaskbarAudioSwitcher
                                     if (state == 2)
                                     {
                                         try { System.IO.File.AppendAllText(System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "mixerlog.txt"), string.Format("Session {0}: Skipped state={1} (Expired)\n", i, state)); } catch {}
+                                        SafeRelease(sessionCtrl);
+                                        continue;
+                                    }
+                                    if (settings.HideSilentApps && state == 0)
+                                    {
+                                        try { System.IO.File.AppendAllText(System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "mixerlog.txt"), string.Format("Session {0}: Skipped state={1} (Inactive/Silent mode active)\n", i, state)); } catch {}
                                         SafeRelease(sessionCtrl);
                                         continue;
                                     }
@@ -1660,10 +1727,12 @@ namespace TaskbarAudioSwitcher
                 currentScr = Screen.AllScreens[scrIdx];
             }
 
-            int maxPanelHeight = currentScr.Bounds.Height - 120; // safe margin for taskbar and padding
+            float scale = DpiHelper.GetScale(this.Handle);
+            int maxPanelHeight = currentScr.Bounds.Height - (int)(120 * scale); // safe margin for taskbar and padding
             int displayCount = activeSessions.Count;
-            int calculatedPanelHeight = Math.Max(52, Math.Min(maxPanelHeight, displayCount * 36 + 16));
-            int newHeight = calculatedPanelHeight + 36;
+            int headerH = (int)(24 * scale); // Height of the "Hide silent apps" checkbox at the top
+            int calculatedPanelHeight = Math.Max((int)(52 * scale), Math.Min(maxPanelHeight, displayCount * (int)(36 * scale) + (int)(16 * scale) + headerH));
+            int newHeight = calculatedPanelHeight + GetCollapsedHeight();
             
             try {
                 System.IO.File.AppendAllText(
@@ -1675,9 +1744,7 @@ namespace TaskbarAudioSwitcher
 
             if (this.Height != newHeight)
             {
-                this.Height = newHeight;
-                UpdateLayout();
-                UpdatePosition();
+                StartHeightAnimation(newHeight);
             }
 
             // Check if sessions changed
@@ -1717,20 +1784,41 @@ namespace TaskbarAudioSwitcher
 
         private void BuildMixerRows(List<SessionData> sessions)
         {
-            int y = 8;
-            int rowHeight = 36;
+            float scale = DpiHelper.GetScale(this.Handle);
+            int rowHeight = (int)(36 * scale);
+            int checkboxH = (int)(24 * scale);
             
             pnlMixer.SuspendLayout();
+
+            // Add the "Hide silent apps" checkbox
+            CheckBox cbHideSilent = new CheckBox
+            {
+                Text = "Hide silent apps",
+                Location = new Point((int)(8 * scale), (int)(4 * scale)),
+                Size = new Size((int)(180 * scale), (int)(18 * scale)),
+                Checked = settings.HideSilentApps,
+                ForeColor = themeTextColor,
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 7.5f * scale)
+            };
+            cbHideSilent.CheckedChanged += (s, e) => {
+                settings.HideSilentApps = cbHideSilent.Checked;
+                settings.Save();
+                RefreshMixerSessions();
+            };
+            pnlMixer.Controls.Add(cbHideSilent);
+
+            int y = checkboxH;
             
             if (sessions.Count == 0)
             {
                 Label lblNoSessions = new Label
                 {
-                    Location = new Point(10, 16),
-                    Size = new Size(pnlMixer.Width - 20, 24),
-                    Font = new Font("Segoe UI", 8f, FontStyle.Italic),
+                    Location = new Point((int)(10 * scale), checkboxH + (int)(10 * scale)),
+                    Size = new Size(pnlMixer.Width - (int)(20 * scale), (int)(24 * scale)),
+                    Font = new Font("Segoe UI", 8f * scale, FontStyle.Italic),
                     ForeColor = themeTextColor,
-                    Text = "Ühtegi heli tekitavat rakendust ei leitud",
+                    Text = "No active applications found",
                     TextAlign = ContentAlignment.MiddleCenter,
                     BackColor = themeBgColor
                 };
@@ -1744,7 +1832,7 @@ namespace TaskbarAudioSwitcher
                 {
                     string sid = data.SessionId;
                     
-                    int rw = pnlMixer.Width - 24; // Ensure safe margin for vertical scrollbar and prevent horizontal scrollbar
+                    int rw = pnlMixer.Width - (int)(24 * scale); // Ensure safe margin for vertical scrollbar and prevent horizontal scrollbar
                     Panel rowPanel = new Panel
                     {
                         Location = new Point(0, y),
@@ -1759,8 +1847,8 @@ namespace TaskbarAudioSwitcher
                     {
                         iconBox = new PictureBox
                         {
-                            Location = new Point(8, 10),
-                            Size = new Size(16, 16),
+                            Location = new Point((int)(8 * scale), (int)(10 * scale)),
+                            Size = new Size((int)(16 * scale), (int)(16 * scale)),
                             Image = data.Icon.ToBitmap(),
                             SizeMode = PictureBoxSizeMode.StretchImage,
                             BackColor = themeBgColor
@@ -1771,9 +1859,9 @@ namespace TaskbarAudioSwitcher
                     {
                         iconLabel = new Label
                         {
-                            Location = new Point(8, 8),
-                            Size = new Size(16, 16),
-                            Font = new Font("Segoe MDL2 Assets", 8f),
+                            Location = new Point((int)(8 * scale), (int)(8 * scale)),
+                            Size = new Size((int)(16 * scale), (int)(16 * scale)),
+                            Font = new Font("Segoe MDL2 Assets", 8f * scale),
                             ForeColor = themeTextColor,
                             Text = data.IsSystemSounds ? "\uE767" : "\uE715",
                             TextAlign = ContentAlignment.MiddleCenter,
@@ -1784,9 +1872,9 @@ namespace TaskbarAudioSwitcher
                     
                     Label nameLabel = new Label
                     {
-                        Location = new Point(28, 10),
-                        Size = new Size(80, 16),
-                        Font = new Font("Segoe UI", 8f),
+                        Location = new Point((int)(28 * scale), (int)(10 * scale)),
+                        Size = new Size((int)(80 * scale), (int)(16 * scale)),
+                        Font = new Font("Segoe UI", 8f * scale),
                         ForeColor = themeTextColor,
                         Text = data.Name,
                         TextAlign = ContentAlignment.MiddleLeft,
@@ -1794,11 +1882,11 @@ namespace TaskbarAudioSwitcher
                     };
                     rowPanel.Controls.Add(nameLabel);
                     
-                    int sliderWidth = rw - 112 - 36 - 8;
+                    int sliderWidth = rw - (int)(112 * scale) - (int)(36 * scale) - (int)(8 * scale);
                     VolumeSlider slider = new VolumeSlider
                     {
-                        Location = new Point(112, 14),
-                        Size = new Size(sliderWidth, 8),
+                        Location = new Point((int)(112 * scale), (int)(14 * scale)),
+                        Size = new Size(sliderWidth, (int)(8 * scale)),
                         ActiveColor = themeActiveBgColor,
                         InactiveColor = Color.FromArgb(80, 128, 128, 128),
                         BackColor = themeBgColor
@@ -1807,9 +1895,9 @@ namespace TaskbarAudioSwitcher
                     
                     Label volLabel = new Label
                     {
-                        Location = new Point(rw - 36, 10),
-                        Size = new Size(30, 16),
-                        Font = new Font("Segoe UI", 8f),
+                        Location = new Point(rw - (int)(36 * scale), (int)(10 * scale)),
+                        Size = new Size((int)(30 * scale), (int)(16 * scale)),
+                        Font = new Font("Segoe UI", 8f * scale),
                         ForeColor = themeTextColor,
                         Text = string.Format("{0:0}%", data.Volume * 100),
                         TextAlign = ContentAlignment.MiddleLeft,
@@ -2123,6 +2211,31 @@ namespace TaskbarAudioSwitcher
     // APP SETTINGS PERSISTENCE
     // ==========================================
 
+    // ==========================================
+    // DPI AWARENESS HELPERS
+    // ==========================================
+    static class DpiHelper
+    {
+        [DllImport("user32.dll", EntryPoint = "GetDpiForWindow")]
+        private static extern uint GetDpiForWindow(IntPtr hwnd);
+
+        public static float GetScale(IntPtr hwnd)
+        {
+            try
+            {
+                return GetDpiForWindow(hwnd) / 96.0f;
+            }
+            catch
+            {
+                return 1.0f;
+            }
+        }
+    }
+
+    // ==========================================
+    // APP SETTINGS PERSISTENCE
+    // ==========================================
+ 
     class AppSettings
     {
         public string DisplayDevices = "";
@@ -2132,6 +2245,9 @@ namespace TaskbarAudioSwitcher
         public bool AlwaysOnTop = true;
         public bool MoveOnFullscreen = false;
         public bool FilterDevices = false;
+        public string DeviceNicknames = "";
+        public bool HideSilentApps = false;
+        public int ScrollStep = 2;
 
         private static string GetFilePath()
         {
@@ -2161,6 +2277,9 @@ namespace TaskbarAudioSwitcher
                             else if (key == "AlwaysOnTop") bool.TryParse(val, out s.AlwaysOnTop);
                             else if (key == "MoveOnFullscreen") bool.TryParse(val, out s.MoveOnFullscreen);
                             else if (key == "FilterDevices") bool.TryParse(val, out s.FilterDevices);
+                            else if (key == "DeviceNicknames") s.DeviceNicknames = val;
+                            else if (key == "HideSilentApps") bool.TryParse(val, out s.HideSilentApps);
+                            else if (key == "ScrollStep") int.TryParse(val, out s.ScrollStep);
                         }
                     }
                 }
@@ -2181,9 +2300,30 @@ namespace TaskbarAudioSwitcher
                 lines.Add("AlwaysOnTop=" + AlwaysOnTop);
                 lines.Add("MoveOnFullscreen=" + MoveOnFullscreen);
                 lines.Add("FilterDevices=" + FilterDevices);
+                lines.Add("DeviceNicknames=" + DeviceNicknames);
+                lines.Add("HideSilentApps=" + HideSilentApps);
+                lines.Add("ScrollStep=" + ScrollStep);
                 System.IO.File.WriteAllLines(GetFilePath(), lines.ToArray());
             }
             catch { }
+        }
+
+        public string GetDeviceNickname(string devId, string defaultName)
+        {
+            if (!string.IsNullOrEmpty(DeviceNicknames))
+            {
+                var pairs = DeviceNicknames.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+                foreach (var pair in pairs)
+                {
+                    var parts = pair.Split(new char[] { ':' }, 2);
+                    if (parts.Length == 2 && parts[0] == devId)
+                    {
+                        return parts[1];
+                    }
+                }
+            }
+            string clean = defaultName.Trim();
+            return clean.Length > 0 ? clean.Substring(0, Math.Min(3, clean.Length)).ToUpper() : "";
         }
     }
 
@@ -2204,10 +2344,17 @@ namespace TaskbarAudioSwitcher
         private ComboBox cmbAlignment;
         private CheckBox cbAlwaysOnTop;
         private CheckBox cbMoveOnFullscreen;
+        private ComboBox cmbScrollStep;
         private Button btnSave;
         private Button btnCancel;
         
-        private List<CheckBox> deviceCheckBoxes;
+        private class DeviceSettingRow
+        {
+            public CheckBox CheckBox;
+            public TextBox TextBox;
+            public string DeviceId;
+        }
+        private List<DeviceSettingRow> deviceRows;
 
         [DllImport("ole32.dll")]
         private static extern void PropVariantClear(ref PROPVARIANT pvar);
@@ -2217,11 +2364,11 @@ namespace TaskbarAudioSwitcher
             this.settings = settings;
             this.enumerator = enumerator;
             this.isDarkMode = isDarkMode;
-            this.deviceCheckBoxes = new List<CheckBox>();
+            this.deviceRows = new List<DeviceSettingRow>();
 
             // Setup Window
             this.Text = "Settings - Taskbar Audio Switcher";
-            this.Size = new Size(380, 520);
+            this.Size = new Size(380, 530);
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
             this.MinimizeBox = false;
@@ -2367,11 +2514,41 @@ namespace TaskbarAudioSwitcher
             };
             this.Controls.Add(cbMoveOnFullscreen);
 
+            // Scroll Step Label & Dropdown
+            Label lblScrollStep = new Label
+            {
+                Text = "Scroll volume step:",
+                Location = new Point(20, 392),
+                Size = new Size(170, 20),
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold)
+            };
+            this.Controls.Add(lblScrollStep);
+
+            cmbScrollStep = new ComboBox
+            {
+                Location = new Point(200, 390),
+                Size = new Size(145, 24),
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                BackColor = controlBg,
+                ForeColor = textColor,
+                FlatStyle = FlatStyle.Flat
+            };
+            cmbScrollStep.Items.Add("1%");
+            cmbScrollStep.Items.Add("2%");
+            cmbScrollStep.Items.Add("5%");
+            cmbScrollStep.Items.Add("10%");
+            this.Controls.Add(cmbScrollStep);
+
+            if (settings.ScrollStep == 1) cmbScrollStep.SelectedIndex = 0;
+            else if (settings.ScrollStep == 5) cmbScrollStep.SelectedIndex = 2;
+            else if (settings.ScrollStep == 10) cmbScrollStep.SelectedIndex = 3;
+            else cmbScrollStep.SelectedIndex = 1; // Default 2%
+
             // Save button
             btnSave = new Button
             {
                 Text = "Save",
-                Location = new Point(155, 425),
+                Location = new Point(155, 440),
                 Size = new Size(90, 30),
                 BackColor = Color.FromArgb(0, 120, 215),
                 ForeColor = Color.White,
@@ -2385,7 +2562,7 @@ namespace TaskbarAudioSwitcher
             btnCancel = new Button
             {
                 Text = "Cancel",
-                Location = new Point(255, 425),
+                Location = new Point(255, 440),
                 Size = new Size(90, 30),
                 BackColor = btnBg,
                 ForeColor = textColor,
@@ -2438,15 +2615,26 @@ namespace TaskbarAudioSwitcher
                             CheckBox cb = new CheckBox
                             {
                                 Text = name,
-                                Tag = devId,
                                 Location = new Point(10, y),
-                                Size = new Size(280, 24),
+                                Size = new Size(225, 24),
                                 Checked = selectedIds.Contains(devId),
                                 ForeColor = textColor,
                                 FlatStyle = FlatStyle.Flat
                             };
+                            TextBox tb = new TextBox
+                            {
+                                Location = new Point(245, y + 2),
+                                Size = new Size(45, 20),
+                                MaxLength = 3,
+                                Text = settings.GetDeviceNickname(devId, name),
+                                BackColor = isDarkMode ? Color.FromArgb(45, 45, 45) : Color.White,
+                                ForeColor = textColor,
+                                BorderStyle = isDarkMode ? BorderStyle.FixedSingle : BorderStyle.Fixed3D
+                            };
+
                             pnlDevices.Controls.Add(cb);
-                            deviceCheckBoxes.Add(cb);
+                            pnlDevices.Controls.Add(tb);
+                            deviceRows.Add(new DeviceSettingRow { CheckBox = cb, TextBox = tb, DeviceId = devId });
                             y += 28;
 
                             Marshal.ReleaseComObject(dev);
@@ -2463,17 +2651,24 @@ namespace TaskbarAudioSwitcher
 
         private void BtnSave_Click(object sender, EventArgs e)
         {
-            // Collect checked device IDs
+            // Collect checked device IDs and nickname mappings
             var checkedIds = new List<string>();
-            foreach (var cb in deviceCheckBoxes)
+            var nicknames = new List<string>();
+            foreach (var row in deviceRows)
             {
-                if (cb.Checked)
+                if (row.CheckBox.Checked)
                 {
-                    checkedIds.Add(cb.Tag.ToString());
+                    checkedIds.Add(row.DeviceId);
+                }
+                string nick = row.TextBox.Text.Trim().ToUpper();
+                if (!string.IsNullOrEmpty(nick))
+                {
+                    nicknames.Add(row.DeviceId + ":" + nick);
                 }
             }
 
             settings.DisplayDevices = string.Join(",", checkedIds.ToArray());
+            settings.DeviceNicknames = string.Join(",", nicknames.ToArray());
             settings.FilterDevices = cbFilterDevices.Checked;
             settings.ScreenIndex = cmbScreen.SelectedIndex;
             if (cmbScreen.SelectedIndex >= 0 && cmbScreen.SelectedIndex < Screen.AllScreens.Length)
@@ -2483,6 +2678,11 @@ namespace TaskbarAudioSwitcher
             settings.Alignment = cmbAlignment.SelectedIndex == 1 ? "Left" : "Right";
             settings.AlwaysOnTop = cbAlwaysOnTop.Checked;
             settings.MoveOnFullscreen = cbMoveOnFullscreen.Checked;
+
+            if (cmbScrollStep.SelectedIndex == 0) settings.ScrollStep = 1;
+            else if (cmbScrollStep.SelectedIndex == 2) settings.ScrollStep = 5;
+            else if (cmbScrollStep.SelectedIndex == 3) settings.ScrollStep = 10;
+            else settings.ScrollStep = 2; // Default 2%
 
             settings.Save();
             this.DialogResult = DialogResult.OK;
