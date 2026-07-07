@@ -2,6 +2,10 @@
 
 This is an extremely lightweight, stable, and convenient Windows 11 utility that automatically places itself on the taskbar (next to the system clock and system tray icons), allowing you to control all computer audio quickly and comfortably.
 
+### Preview
+![Taskbar Widget](TAS1.png)  
+![Expanded Mixer Panel](TAS2.png)
+
 ## Key Features
 1. **Quick Audio Device Switching:** Switch between up to 3 selected active devices (e.g. speakers, headphones, TV) by clicking on their corresponding icons.
 2. **Volume Regulation:** Adjust volume by dragging the slider or scrolling the mouse wheel directly over the utility.
