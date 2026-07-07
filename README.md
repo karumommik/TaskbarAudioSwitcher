@@ -30,6 +30,13 @@ Several critical low-level Windows API and memory improvements have been made to
 - **Non-activating Window (WS_EX_NOACTIVATE):** Clicking on the utility does not steal focus from other active windows, making it perfect for gamers.
 - **System Tray Icon:** Runs quietly in the background. Right-clicking the system tray icon allows you to exit the utility, open settings, or enable run at Windows startup.
 
+## Known Behaviors & Quirks
+To ensure 24/7 stability and prevent being flagged by antivirus software, this utility runs as a lightweight, borderless Win32 overlay window rather than hooking deep into the Windows Shell (`explorer.exe`) memory or modifying system system files. 
+
+As a result, you might notice some specific behaviors:
+* **Brief Vanishing/Reappearing:** When minimizing windows, pressing `Win+D` (Show Desktop), opening the Start Menu, or clicking taskbar flyouts, the utility may briefly disappear for a fraction of a second. This happens because Windows resets the overlay order of taskbar windows. The utility automatically detects this and safely repositions itself back into place on the next background timer tick (within 500ms).
+* **Focus Safety:** Clicking the utility or adjusting volumes does not steal focus from your active windows or games, meaning you won't be accidentally tabbed out of your active application.
+
 ## Installation and Running
 ### 1. Compile and Run
 Double-click the convenient `compile.bat` file included in the folder.
