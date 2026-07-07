@@ -19,7 +19,11 @@ This is an extremely lightweight, stable, and convenient Windows 11 utility that
 
 ## Release History & Changelog
 
-### v1.1.0 (Current Version)
+### v1.2.0 (Current Version)
+This release introduces smart dynamic audio output filtering and automatic discovery.
+* **Dynamic Audio Device Filtering (Toggle):** Added a new setting ("Show only selected devices (filter active)"). When unchecked (default), the utility automatically displays **all active/enabled audio outputs** in Windows. When checked, it applies your custom selection filter. This allows newly connected devices (like Bluetooth headphones) to be discovered and displayed automatically on the taskbar.
+
+### v1.1.0
 This release focuses on UI flexibility, individual application volume controls, and self-healing monitor bindings.
 * **Dynamic Audio Device Limits:** Removed the hardcoded limit of 3 audio devices. You can now select as many outputs as you want in the settings panel. The utility bar on the taskbar dynamically resizes to fit all of them.
 * **Device Name Abbreviations:** Each device icon now displays its first 3 letters as a capitalized abbreviation underneath the icon (e.g. `SPE` for Speakers, `HEA` for Headphones, `HDM` for HDMI). This makes it easy to distinguish outputs that share the same system icon.

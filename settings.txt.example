@@ -4,3 +4,4 @@ ScreenDeviceName=
 Alignment=Right
 AlwaysOnTop=True
 MoveOnFullscreen=True
+FilterDevices=False
