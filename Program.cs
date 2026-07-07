@@ -2251,7 +2251,9 @@ namespace TaskbarAudioSwitcher
                             {
                                 string name = proc.ProcessName.ToLower();
                                 if (name == "lockapp" || name == "logonui" || name == "explorer" || name == "dwm" || 
-                                    name == "shellexperiencehost" || name == "searchhost" || name == "startmenuexperiencehost")
+                                    name == "shellexperiencehost" || name == "searchhost" || name == "startmenuexperiencehost" ||
+                                    name == "chrome" || name == "firefox" || name == "msedge" || name == "opera" || 
+                                    name == "brave" || name == "vivaldi" || name == "discord" || name == "teams" || name == "zoom")
                                 {
                                     return false;
                                 }
