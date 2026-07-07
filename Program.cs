@@ -425,6 +425,8 @@ namespace TaskbarAudioSwitcher
         private IconButton btnScreenMove;
         private List<MixerRow> mixerRows = new List<MixerRow>();
         private int gcCounter = 0;
+        private int themeColorsTickCounter = 0;
+        private int audioStateTickCounter = 0;
         private uint activeFullscreenProcessId = 0;
         private string activeFullscreenScreenDeviceName = null;
 
@@ -611,7 +613,7 @@ namespace TaskbarAudioSwitcher
             this.Deactivate += (s, e) => {
                 if (isExpanded) ToggleMixer();
             };
-            updateTimer = new System.Windows.Forms.Timer { Interval = 500 };
+            updateTimer = new System.Windows.Forms.Timer { Interval = 100 };
             updateTimer.Tick += UpdateTimer_Tick;
             updateTimer.Start();
 
@@ -802,11 +804,30 @@ namespace TaskbarAudioSwitcher
 
         private void UpdateTimer_Tick(object sender, EventArgs e)
         {
-            UpdateThemeColors();
-            RefreshAudioState();
+            // 1. Throttled Theme Check (every 2 seconds / 20 ticks of 100ms)
+            themeColorsTickCounter++;
+            if (themeColorsTickCounter >= 20)
+            {
+                themeColorsTickCounter = 0;
+                UpdateThemeColors();
+            }
+
+            // 2. Throttled Audio State Check (every 500ms / 5 ticks of 100ms)
+            audioStateTickCounter++;
+            if (audioStateTickCounter >= 5)
+            {
+                audioStateTickCounter = 0;
+                RefreshAudioState();
+            }
+
+            // 3. Fast Mixer & Position check (every tick / 100ms)
             if (isExpanded)
             {
-                RefreshMixerSessions();
+                // Refresh mixer sessions at same rate as before (every 500ms / 5 ticks of 100ms)
+                if (audioStateTickCounter == 0)
+                {
+                    RefreshMixerSessions();
+                }
 
                 IntPtr activeHwnd = GetForegroundWindow();
                 if (activeHwnd != IntPtr.Zero && activeHwnd != this.Handle && !IsChild(this.Handle, activeHwnd))
@@ -832,9 +853,9 @@ namespace TaskbarAudioSwitcher
             }
             UpdatePosition();
 
-            // Periodic Garbage Collection every 60 seconds (120 ticks * 500ms)
+            // Periodic Garbage Collection every 60 seconds (600 ticks * 100ms)
             gcCounter++;
-            if (gcCounter >= 120)
+            if (gcCounter >= 600)
             {
                 gcCounter = 0;
                 GC.Collect();
