@@ -426,8 +426,6 @@ namespace TaskbarAudioSwitcher
         private int gcCounter = 0;
         private uint activeFullscreenProcessId = 0;
         private string activeFullscreenScreenDeviceName = null;
-        private System.Windows.Forms.Timer animationTimer;
-        private int animationTargetHeight = 36;
 
         private class MixerRow
         {
@@ -603,8 +601,6 @@ namespace TaskbarAudioSwitcher
             updateTimer.Tick += UpdateTimer_Tick;
             updateTimer.Start();
 
-            animationTimer = new System.Windows.Forms.Timer { Interval = 10 };
-            animationTimer.Tick += AnimationTimer_Tick;
 
             // Initial alignment and populate
             RefreshAudioState();
@@ -1487,48 +1483,6 @@ namespace TaskbarAudioSwitcher
             return (int)(36 * DpiHelper.GetScale(this.Handle));
         }
 
-        private void StartHeightAnimation(int targetHeight)
-        {
-            animationTargetHeight = targetHeight;
-            animationTimer.Stop();
-            animationTimer.Start();
-        }
-
-        private void AnimationTimer_Tick(object sender, EventArgs e)
-        {
-            float scale = DpiHelper.GetScale(this.Handle);
-            int stepVal = (int)(16 * scale);
-            if (stepVal < 1) stepVal = 1;
-
-            int diff = animationTargetHeight - this.Height;
-            if (Math.Abs(diff) <= stepVal)
-            {
-                this.Height = animationTargetHeight;
-                animationTimer.Stop();
-
-                // If we finished animating down to closed state
-                if (animationTargetHeight == GetCollapsedHeight())
-                {
-                    pnlMixer.Visible = false;
-                    ClearMixerRows();
-                    // Immediately sweep memory when mixer closes
-                    GC.Collect();
-                    GC.WaitForPendingFinalizers();
-                    GC.Collect();
-                }
-
-                UpdateLayout();
-                UpdatePosition();
-            }
-            else
-            {
-                int step = (diff > 0) ? stepVal : -stepVal;
-                this.Height += step;
-                UpdateLayout();
-                UpdatePosition();
-            }
-        }
-
         private void ToggleMixer()
         {
             isExpanded = !isExpanded;
@@ -1542,8 +1496,16 @@ namespace TaskbarAudioSwitcher
             else
             {
                 try { System.IO.File.WriteAllText(System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "mixerlog.txt"), "--- Mixer Closed ---\n"); } catch {}
-                // Start collapse animation to collapsed height
-                StartHeightAnimation(GetCollapsedHeight());
+                pnlMixer.Visible = false;
+                this.Height = GetCollapsedHeight();
+                UpdateLayout();
+                UpdatePosition();
+                ClearMixerRows();
+
+                // Immediately sweep memory when mixer closes
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+                GC.Collect();
             }
         }
 
@@ -1731,7 +1693,10 @@ namespace TaskbarAudioSwitcher
             int maxPanelHeight = currentScr.Bounds.Height - (int)(120 * scale); // safe margin for taskbar and padding
             int displayCount = activeSessions.Count;
             int headerH = (int)(24 * scale); // Height of the "Hide silent apps" checkbox at the top
-            int calculatedPanelHeight = Math.Max((int)(52 * scale), Math.Min(maxPanelHeight, displayCount * (int)(36 * scale) + (int)(16 * scale) + headerH));
+            
+            // Adjust minimum height to prevent scrollbars when there are no active sessions to display
+            int minHeight = (displayCount == 0) ? (int)(68 * scale) : (int)(52 * scale);
+            int calculatedPanelHeight = Math.Max(minHeight, Math.Min(maxPanelHeight, displayCount * (int)(36 * scale) + (int)(16 * scale) + headerH));
             int newHeight = calculatedPanelHeight + GetCollapsedHeight();
             
             try {
@@ -1744,7 +1709,9 @@ namespace TaskbarAudioSwitcher
 
             if (this.Height != newHeight)
             {
-                StartHeightAnimation(newHeight);
+                this.Height = newHeight;
+                UpdateLayout();
+                UpdatePosition();
             }
 
             // Check if sessions changed

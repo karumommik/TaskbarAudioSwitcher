@@ -20,10 +20,9 @@ This is an extremely lightweight, stable, and convenient Windows 11 utility that
 ## Release History & Changelog
 
 ### v1.3.0 (Current Version)
-This major update introduces device custom nicknames, interactive volume scroll step settings, silent application filtering, fluid slide animations, and full high-DPI scaling.
+This major update introduces device custom nicknames, interactive volume scroll step settings, silent application filtering, and full high-DPI scaling.
 * **Device Custom Nicknames:** Added small textboxes next to the device checkboxes in the settings dialog, allowing you to define custom 3-letter nicknames/abbreviations for your output devices (e.g. `KLA` for klapid, `MÄN` for gaming headphones). If left empty, it falls back to the first 3 letters of the system name.
 * **Hide Silent Apps in Mixer:** Added a "Hide silent apps" checkbox directly at the top of the expanded mixer panel. When checked, it filters out applications whose WASAPI audio session states are currently inactive, automatically resizing the mixer window to save space.
-* **Fluid Slide-In Mixer Animations:** Redesigned the mixer opening/closing transitions. The mixer window now smoothly slides open and closed using a native timer-driven height transition.
 * **Customizable Scroll Volume Step:** Added a dropdown in the settings panel to change the mouse wheel scroll step size (choose between 1%, 2%, 5%, or 10%).
 * **High-DPI Per-Monitor Awareness:** Implemented custom scaling inside the layout manager and custom drawing controls, ensuring the entire widget (buttons, volume sliders, fonts, separators) resizes and draws razor-sharp on screens with different DPI scaling factors (e.g., 100%, 125%, 150%, 200%).
 
