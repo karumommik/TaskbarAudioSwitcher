@@ -873,21 +873,31 @@ namespace TaskbarAudioSwitcher
                     }
 
                     // Filter based on settings
-                    var selectedIds = new List<string>(settings.DisplayDevices.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries));
                     var finalIds = new List<string>();
                     var finalNames = new List<string>();
 
-                    for (int i = 0; i < allActiveIds.Count; i++)
+                    if (settings.FilterDevices)
                     {
-                        if (selectedIds.Contains(allActiveIds[i]))
+                        var selectedIds = new List<string>(settings.DisplayDevices.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries));
+                        for (int i = 0; i < allActiveIds.Count; i++)
                         {
-                            finalIds.Add(allActiveIds[i]);
-                            finalNames.Add(allActiveNames[i]);
+                            if (selectedIds.Contains(allActiveIds[i]))
+                            {
+                                finalIds.Add(allActiveIds[i]);
+                                finalNames.Add(allActiveNames[i]);
+                            }
+                        }
+                        // Fallback if filter is active but no selected devices are active/connected
+                        if (finalIds.Count == 0)
+                        {
+                            for (int i = 0; i < allActiveIds.Count; i++)
+                            {
+                                finalIds.Add(allActiveIds[i]);
+                                finalNames.Add(allActiveNames[i]);
+                            }
                         }
                     }
-
-                    // Fallback to all active devices if the filtered list is empty
-                    if (finalIds.Count == 0)
+                    else
                     {
                         for (int i = 0; i < allActiveIds.Count; i++)
                         {
@@ -2121,6 +2131,7 @@ namespace TaskbarAudioSwitcher
         public string Alignment = "Right";
         public bool AlwaysOnTop = true;
         public bool MoveOnFullscreen = false;
+        public bool FilterDevices = false;
 
         private static string GetFilePath()
         {
@@ -2149,6 +2160,7 @@ namespace TaskbarAudioSwitcher
                             else if (key == "Alignment") s.Alignment = val;
                             else if (key == "AlwaysOnTop") bool.TryParse(val, out s.AlwaysOnTop);
                             else if (key == "MoveOnFullscreen") bool.TryParse(val, out s.MoveOnFullscreen);
+                            else if (key == "FilterDevices") bool.TryParse(val, out s.FilterDevices);
                         }
                     }
                 }
@@ -2168,6 +2180,7 @@ namespace TaskbarAudioSwitcher
                 lines.Add("Alignment=" + Alignment);
                 lines.Add("AlwaysOnTop=" + AlwaysOnTop);
                 lines.Add("MoveOnFullscreen=" + MoveOnFullscreen);
+                lines.Add("FilterDevices=" + FilterDevices);
                 System.IO.File.WriteAllLines(GetFilePath(), lines.ToArray());
             }
             catch { }
@@ -2185,6 +2198,7 @@ namespace TaskbarAudioSwitcher
         private bool isDarkMode;
 
         // UI Controls
+        private CheckBox cbFilterDevices;
         private Panel pnlDevices;
         private ComboBox cmbScreen;
         private ComboBox cmbAlignment;
@@ -2222,26 +2236,43 @@ namespace TaskbarAudioSwitcher
             this.BackColor = bgColor;
             this.ForeColor = textColor;
 
+            // Filter Checkbox
+            cbFilterDevices = new CheckBox
+            {
+                Text = "Show only selected devices (filter active)",
+                Location = new Point(20, 15),
+                Size = new Size(325, 24),
+                Checked = settings.FilterDevices,
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+                FlatStyle = FlatStyle.Flat
+            };
+            this.Controls.Add(cbFilterDevices);
+
             // Title Label for Devices
             Label lblDevices = new Label
             {
-                Text = "Select audio devices to display:",
-                Location = new Point(20, 15),
+                Text = "Devices to show when filter is active:",
+                Location = new Point(20, 45),
                 Size = new Size(340, 20),
-                Font = new Font("Segoe UI", 9f, FontStyle.Bold)
+                Font = new Font("Segoe UI", 8.5f)
             };
             this.Controls.Add(lblDevices);
 
             // Devices Panel
             pnlDevices = new Panel
             {
-                Location = new Point(20, 40),
-                Size = new Size(325, 160),
+                Location = new Point(20, 68),
+                Size = new Size(325, 130),
                 BorderStyle = BorderStyle.FixedSingle,
                 BackColor = controlBg,
-                AutoScroll = true
+                AutoScroll = true,
+                Enabled = settings.FilterDevices
             };
             this.Controls.Add(pnlDevices);
+
+            cbFilterDevices.CheckedChanged += (s, e) => {
+                pnlDevices.Enabled = cbFilterDevices.Checked;
+            };
 
             // Populate Devices
             PopulateDevices(textColor);
@@ -2443,6 +2474,7 @@ namespace TaskbarAudioSwitcher
             }
 
             settings.DisplayDevices = string.Join(",", checkedIds.ToArray());
+            settings.FilterDevices = cbFilterDevices.Checked;
             settings.ScreenIndex = cmbScreen.SelectedIndex;
             if (cmbScreen.SelectedIndex >= 0 && cmbScreen.SelectedIndex < Screen.AllScreens.Length)
             {
