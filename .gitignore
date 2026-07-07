@@ -1,0 +1,8 @@
+# Logs
+*log.txt
+
+# Binaries
+*.exe
+
+# Local settings
+settings.txt
