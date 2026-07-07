@@ -1325,6 +1325,9 @@ namespace TaskbarAudioSwitcher
 
         private void Form_MouseWheel(object sender, MouseEventArgs e)
         {
+            var hme = e as HandledMouseEventArgs;
+            if (hme != null && hme.Handled) return;
+
             Control senderControl = sender as Control;
             MixerRow matchedRow = null;
             if (senderControl != null && isExpanded)
@@ -1353,7 +1356,17 @@ namespace TaskbarAudioSwitcher
                 SetSessionVolume(matchedRow.SessionId, newVal);
                 matchedRow.Slider.UpdateValue(newVal);
                 matchedRow.VolLabel.Text = string.Format("{0:0}%", newVal * 100);
+
+                if (hme != null)
+                {
+                    hme.Handled = true;
+                }
                 return;
+            }
+
+            if (hme != null)
+            {
+                hme.Handled = true;
             }
 
             IMMDevice defaultDev = null;
