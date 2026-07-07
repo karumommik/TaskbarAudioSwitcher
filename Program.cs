@@ -626,7 +626,7 @@ namespace TaskbarAudioSwitcher
             titleItem.Enabled = false;
             contextMenu.MenuItems.Add(titleItem);
 
-            MenuItem startupItem = new MenuItem("Käivita koos Windowsiga (Startup)", (s, e) => {
+            MenuItem startupItem = new MenuItem("Run at Windows Startup", (s, e) => {
                 MenuItem mi = (MenuItem)s;
                 mi.Checked = !mi.Checked;
                 SetStartup(mi.Checked);
@@ -634,17 +634,17 @@ namespace TaskbarAudioSwitcher
             startupItem.Checked = IsStartupEnabled();
             contextMenu.MenuItems.Add(startupItem);
 
-            MenuItem settingsItem = new MenuItem("Seaded (Settings)", (s, e) => ShowSettings());
+            MenuItem settingsItem = new MenuItem("Settings", (s, e) => ShowSettings());
             contextMenu.MenuItems.Add(settingsItem);
 
-            MenuItem repositionItem = new MenuItem("Repositsioneeri kohe", (s, e) => {
+            MenuItem repositionItem = new MenuItem("Reposition Now", (s, e) => {
                 UpdatePosition();
             });
             contextMenu.MenuItems.Add(repositionItem);
 
             contextMenu.MenuItems.Add("-");
 
-            MenuItem exitItem = new MenuItem("Välju", (s, e) => {
+            MenuItem exitItem = new MenuItem("Exit", (s, e) => {
                 notifyIcon.Visible = false;
                 Application.Exit();
             });
@@ -827,7 +827,7 @@ namespace TaskbarAudioSwitcher
                                 dev.GetId(out devId);
                                 
                                 int hrProps = dev.OpenPropertyStore(0, out props);
-                                string name = "Audio väljund";
+                                string name = "Audio output";
                                 if (hrProps == 0 && props != null)
                                 {
                                     var key = new PROPERTYKEY(new Guid("a45c254e-df1c-4efd-8020-67d146a850e0"), 14);
@@ -2024,7 +2024,7 @@ namespace TaskbarAudioSwitcher
             this.deviceCheckBoxes = new List<CheckBox>();
 
             // Setup Window
-            this.Text = "Seaded - Taskbar Audio Switcher";
+            this.Text = "Settings - Taskbar Audio Switcher";
             this.Size = new Size(380, 520);
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
@@ -2043,7 +2043,7 @@ namespace TaskbarAudioSwitcher
             // Title Label for Devices
             Label lblDevices = new Label
             {
-                Text = "Vali utiliidis kuvatavad heliseadmed (kuni 3):",
+                Text = "Select audio devices to display (up to 3):",
                 Location = new Point(20, 15),
                 Size = new Size(340, 20),
                 Font = new Font("Segoe UI", 9f, FontStyle.Bold)
@@ -2067,7 +2067,7 @@ namespace TaskbarAudioSwitcher
             // Monitor Label & Dropdown
             Label lblScreen = new Label
             {
-                Text = "Kuva taskbaril ekraanil:",
+                Text = "Display on taskbar screen:",
                 Location = new Point(20, 215),
                 Size = new Size(325, 20),
                 Font = new Font("Segoe UI", 9f, FontStyle.Bold)
@@ -2088,8 +2088,8 @@ namespace TaskbarAudioSwitcher
             var screens = Screen.AllScreens;
             for (int i = 0; i < screens.Length; i++)
             {
-                string suffix = screens[i].Primary ? " (Peamine)" : "";
-                cmbScreen.Items.Add(string.Format("Ekraan {0}{1} - {2}x{3}", i + 1, suffix, screens[i].Bounds.Width, screens[i].Bounds.Height));
+                string suffix = screens[i].Primary ? " (Primary)" : "";
+                cmbScreen.Items.Add(string.Format("Screen {0}{1} - {2}x{3}", i + 1, suffix, screens[i].Bounds.Width, screens[i].Bounds.Height));
             }
             if (settings.ScreenIndex >= 0 && settings.ScreenIndex < screens.Length)
                 cmbScreen.SelectedIndex = settings.ScreenIndex;
@@ -2099,7 +2099,7 @@ namespace TaskbarAudioSwitcher
             // Alignment Label & Dropdown
             Label lblAlignment = new Label
             {
-                Text = "Joondus taskbaril:",
+                Text = "Taskbar alignment:",
                 Location = new Point(20, 275),
                 Size = new Size(325, 20),
                 Font = new Font("Segoe UI", 9f, FontStyle.Bold)
@@ -2115,8 +2115,8 @@ namespace TaskbarAudioSwitcher
                 ForeColor = textColor,
                 FlatStyle = FlatStyle.Flat
             };
-            cmbAlignment.Items.Add("Kella kõrval (Paremal)");
-            cmbAlignment.Items.Add("Start nupu kõrval (Vasakul)");
+            cmbAlignment.Items.Add("Next to clock (Right)");
+            cmbAlignment.Items.Add("Next to Start button (Left)");
             this.Controls.Add(cmbAlignment);
 
             if (settings.Alignment == "Left")
@@ -2127,7 +2127,7 @@ namespace TaskbarAudioSwitcher
             // Always on Top Checkbox
             cbAlwaysOnTop = new CheckBox
             {
-                Text = "Alati kõige peal (Always on Top, ka täisekraani peal)",
+                Text = "Always on Top (even over fullscreen)",
                 Location = new Point(20, 330),
                 Size = new Size(325, 24),
                 Checked = settings.AlwaysOnTop,
@@ -2139,7 +2139,7 @@ namespace TaskbarAudioSwitcher
             // Move on Fullscreen Checkbox
             cbMoveOnFullscreen = new CheckBox
             {
-                Text = "Liiguta mängu käivitumisel teisele ekraanile",
+                Text = "Move to second screen on game launch",
                 Location = new Point(20, 360),
                 Size = new Size(325, 24),
                 Checked = settings.MoveOnFullscreen,
@@ -2151,7 +2151,7 @@ namespace TaskbarAudioSwitcher
             // Save button
             btnSave = new Button
             {
-                Text = "Salvesta",
+                Text = "Save",
                 Location = new Point(155, 425),
                 Size = new Size(90, 30),
                 BackColor = Color.FromArgb(0, 120, 215),
@@ -2165,7 +2165,7 @@ namespace TaskbarAudioSwitcher
             // Cancel button
             btnCancel = new Button
             {
-                Text = "Tühista",
+                Text = "Cancel",
                 Location = new Point(255, 425),
                 Size = new Size(90, 30),
                 BackColor = btnBg,
@@ -2202,7 +2202,7 @@ namespace TaskbarAudioSwitcher
                             
                             IPropertyStore props;
                             dev.OpenPropertyStore(0, out props);
-                            string name = "Audio väljund";
+                            string name = "Audio output";
                             if (props != null)
                             {
                                 var key = new PROPERTYKEY(new Guid("a45c254e-df1c-4efd-8020-67d146a850e0"), 14);
@@ -2238,7 +2238,7 @@ namespace TaskbarAudioSwitcher
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Viga seadmete lugemisel: " + ex.Message);
+                MessageBox.Show("Error reading devices: " + ex.Message);
             }
         }
 
