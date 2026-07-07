@@ -2245,6 +2245,19 @@ namespace TaskbarAudioSwitcher
                     {
                         onScreen = scr;
                         GetWindowThreadProcessId(hwnd, out processId);
+                        try
+                        {
+                            using (var proc = System.Diagnostics.Process.GetProcessById((int)processId))
+                            {
+                                string name = proc.ProcessName.ToLower();
+                                if (name == "lockapp" || name == "logonui" || name == "explorer" || name == "dwm" || 
+                                    name == "shellexperiencehost" || name == "searchhost" || name == "startmenuexperiencehost")
+                                {
+                                    return false;
+                                }
+                            }
+                        }
+                        catch { }
                         return true;
                     }
                 }
