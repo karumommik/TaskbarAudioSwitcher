@@ -24,8 +24,8 @@ This is an extremely lightweight, stable, and convenient Windows 11 utility that
 ## Release History & Changelog
 
 ### v2.0.0 (Current Version)
-This major release modernizes the application's framework and architecture, transforming it from a legacy .NET 4.0 monolith to a modular .NET 8.0 project with standalone build support.
-* **Modern .NET 8.0 Migration:** Replaced the obsolete .NET Framework 4.0 target. The application now runs on CoreCLR, benefiting from modern runtime speed, optimized Garbage Collection (GC) to minimize taustal/background CPU ticks, and native COM interop performance.
+This major release modernizes the application's framework and architecture, transforming it from a legacy .NET 4.0 monolith to a modular .NET 10.0 project with standalone build support.
+* **Modern .NET 10.0 Migration:** Replaced the obsolete .NET Framework 4.0 target. The application now runs on CoreCLR, benefiting from modern runtime speed, optimized Garbage Collection (GC) to minimize taustal/background CPU ticks, and native COM interop performance.
 * **Modular Codebase Architecture:** Decomposed the massive 3000-line single-file monolith (`Program.cs`) into a clean, object-oriented directory structure:
   - `Native/` for Core Audio COM and Win32 P/Invokes.
   - `Core/` for application settings and helper utilities.
@@ -79,7 +79,7 @@ As a result, you might notice some specific behaviors:
 
 ## Installation and Running
 ### 1. Compile and Run
-To compile the application, you need the **.NET 8.0 SDK** (or higher) installed on your machine.
+To compile the application, you need the **.NET 10.0 SDK** (or higher) installed on your machine.
 - Double-click the `build.bat` file in the folder.
 - This script checks for the .NET SDK and runs a self-contained single-file publish (`dotnet publish`).
 - The optimized executable `TaskbarAudioSwitcher.exe` will be generated in the `build/` directory.
