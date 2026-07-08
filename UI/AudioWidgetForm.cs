@@ -37,6 +37,12 @@ namespace TaskbarAudioSwitcher.UI
         private int audioStateTickCounter = 0;
         private uint activeFullscreenProcessId = 0;
         private string? activeFullscreenScreenDeviceName = null;
+        private class ProcessCacheItem
+        {
+            public string Name { get; set; } = string.Empty;
+            public Icon? Icon { get; set; }
+        }
+        private Dictionary<int, ProcessCacheItem> processCache = new Dictionary<int, ProcessCacheItem>();
 
         private class MixerRow
         {
@@ -1227,6 +1233,7 @@ namespace TaskbarAudioSwitcher.UI
 
         private void ClearMixerRows()
         {
+            processCache.Clear();
             foreach (var row in mixerRows)
             {
                 if (row.RowPanel != null)
@@ -1690,12 +1697,20 @@ namespace TaskbarAudioSwitcher.UI
 
         private void GetSessionInfo(int pid, bool isSystem, out string name, out Icon? icon)
         {
+            if (processCache.TryGetValue(pid, out var cachedItem))
+            {
+                name = cachedItem.Name;
+                icon = cachedItem.Icon;
+                return;
+            }
+
             bool isEst = System.Globalization.CultureInfo.CurrentCulture.TwoLetterISOLanguageName.Equals("et", StringComparison.OrdinalIgnoreCase);
             name = isEst ? "Süsteemi helid" : "System Sounds";
             icon = null;
 
             if (isSystem || pid == 0)
             {
+                processCache[pid] = new ProcessCacheItem { Name = name, Icon = icon };
                 return;
             }
 
@@ -1721,6 +1736,8 @@ namespace TaskbarAudioSwitcher.UI
             {
                 name = isEst ? ("Rakendus (PID " + pid + ")") : ("Application (PID " + pid + ")");
             }
+
+            processCache[pid] = new ProcessCacheItem { Name = name, Icon = icon };
         }
 
         protected override void OnPaint(PaintEventArgs e)
