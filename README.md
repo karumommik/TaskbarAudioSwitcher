@@ -23,9 +23,18 @@ This is an extremely lightweight, stable, and convenient Windows 11 utility that
 
 ## Release History & Changelog
 
-### v2.0.0 (Current Version)
+### v3.0.1 (Current Version)
+This patch release resolves layout positioning and performance stutters.
+* **WorkingArea Y-Positioning Fix:** Replaced fragile Win32 `GetWindowRect` on the taskbar with DPI-aware `Screen.WorkingArea`, ensuring the widget aligns perfectly at the bottom of the screen after monitor focus switches or screen locks.
+* **Mixer Session Caching:** Implemented in-memory caching for process names and icons in the volume mixer, preventing micro-stutters and cutting CPU spikes when the mixer panel is open.
+* **High-DPI Alignment:** Properly scaled all layout margins and coordinates in `UpdatePosition()`.
+
+### v3.0.0
 This major release modernizes the application's framework and architecture, transforming it from a legacy .NET 4.0 monolith to a modular .NET 10.0 project with standalone build support.
 * **Modern .NET 10.0 Migration:** Replaced the obsolete .NET Framework 4.0 target. The application now runs on CoreCLR, benefiting from modern runtime speed, optimized Garbage Collection (GC) to minimize taustal/background CPU ticks, and native COM interop performance.
+
+### v2.0.0
+This major release modernizes the application's framework and architecture, transforming it from a legacy .NET 4.0 monolith to a modular .NET 8.0 project with standalone build support.
 * **Modular Codebase Architecture:** Decomposed the massive 3000-line single-file monolith (`Program.cs`) into a clean, object-oriented directory structure:
   - `Native/` for Core Audio COM and Win32 P/Invokes.
   - `Core/` for application settings and helper utilities.

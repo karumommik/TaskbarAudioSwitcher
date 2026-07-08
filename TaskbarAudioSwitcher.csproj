@@ -14,5 +14,8 @@
     <PublishReadyToRun>true</PublishReadyToRun>
     <!-- Suppress WinForms Designer analyzer warning as controls are created programmatically -->
     <NoWarn>$(NoWarn);WFO1000</NoWarn>
+    <Version>3.0.1</Version>
+    <Product>Taskbar Audio Switcher</Product>
+    <Company>Erki Lippand</Company>
   </PropertyGroup>
 </Project>
