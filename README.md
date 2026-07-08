@@ -23,7 +23,11 @@ This is an extremely lightweight, stable, and convenient Windows 11 utility that
 
 ## Release History & Changelog
 
-### v3.1.0 (Current Version)
+### v3.1.1 (Current Version)
+This patch release resolves a layout race condition when pinning applications.
+* **Taskbar Tray Overlap Fix:** Replaced asynchronous WinForms width updates with atomic `Bounds` updates, ensuring the widget grows to the left (towards the Start button) and never covers the system tray icons (clock, hidden icons arrow) when pinning multiple applications.
+
+### v3.1.0
 This minor release introduces app-specific volume pinning.
 * **Pin Applications to Taskbar:** Added a "Pin" icon next to each application row in the mixer. Users can pin up to 2 active audio-playing applications (e.g., Firefox, Spotify) to display their individual volume sliders directly on the main taskbar widget for quick adjustment.
 * **Auto-Cleanup and Persistence:** Pinned volume sliders are kept in sync with active sessions. If a pinned application is closed or stops playing audio, its pinned slider is automatically removed from the taskbar widget.

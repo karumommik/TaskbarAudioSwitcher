@@ -82,6 +82,7 @@ namespace TaskbarAudioSwitcher.UI
         private int separatorX = 0;
         private string[] activeDeviceIds = Array.Empty<string>();
         private string currentDefaultId = string.Empty;
+        private int calculatedWidth = 295;
         
         // Theme Colors
         private Color themeBgColor;
@@ -831,12 +832,9 @@ namespace TaskbarAudioSwitcher.UI
             }
 
             int totalWidth = currentX + margin;
-            if (this.Width != totalWidth)
-            {
-                this.Width = totalWidth;
-                this.Invalidate();
-                UpdatePosition();
-            }
+            calculatedWidth = totalWidth;
+            UpdatePosition();
+            this.Invalidate();
 
             if (pnlMixer != null)
             {
@@ -994,16 +992,16 @@ namespace TaskbarAudioSwitcher.UI
                     Win32.RECT rectTray;
                     if (notifyHwnd != IntPtr.Zero && Win32.GetWindowRect(notifyHwnd, out rectTray))
                     {
-                        targetLeft = (int)(rectTray.Left / scale) - this.Width - (int)(12 * scale);
+                        targetLeft = (int)(rectTray.Left / scale) - calculatedWidth - (int)(12 * scale);
                     }
                     else
                     {
-                        targetLeft = bounds.Right - this.Width - (int)(200 * scale);
+                        targetLeft = bounds.Right - calculatedWidth - (int)(200 * scale);
                     }
                 }
                 else
                 {
-                    targetLeft = bounds.Right - this.Width - (int)(16 * scale);
+                    targetLeft = bounds.Right - calculatedWidth - (int)(16 * scale);
                 }
             }
 
@@ -1016,9 +1014,9 @@ namespace TaskbarAudioSwitcher.UI
             } catch {}
 
             // Update managed bounds first so WinForms doesn't fight back!
-            if (this.Left != targetLeft || this.Top != targetTop)
+            if (this.Left != targetLeft || this.Top != targetTop || this.Width != calculatedWidth)
             {
-                this.Bounds = new Rectangle(targetLeft, targetTop, this.Width, this.Height);
+                this.Bounds = new Rectangle(targetLeft, targetTop, calculatedWidth, this.Height);
             }
 
             // Set Z-order (topmost) natively
