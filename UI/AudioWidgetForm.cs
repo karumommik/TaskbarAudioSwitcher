@@ -252,6 +252,9 @@ namespace TaskbarAudioSwitcher.UI
             UpdateLayout();
             UpdatePosition();
 
+            // Check for updates asynchronously on startup
+            Task.Run(() => CheckForUpdatesAsync());
+
             // Track form closing reason
             this.FormClosing += (s, e) => {
                 try
@@ -2126,6 +2129,65 @@ namespace TaskbarAudioSwitcher.UI
                 }
             }
             return false;
+        }
+
+        private async Task CheckForUpdatesAsync()
+        {
+            try
+            {
+                using (var client = new System.Net.Http.HttpClient())
+                {
+                    client.DefaultRequestHeaders.Add("User-Agent", "TaskbarAudioSwitcher-Updater");
+                    string url = "https://api.github.com/repos/karumommik/TaskbarAudioSwitcher/releases/latest";
+                    var response = await client.GetStringAsync(url);
+                    
+                    string tagNameKey = "\"tag_name\":";
+                    int idx = response.IndexOf(tagNameKey);
+                    if (idx != -1)
+                    {
+                        int start = response.IndexOf("\"", idx + tagNameKey.Length);
+                        if (start != -1)
+                        {
+                            int end = response.IndexOf("\"", start + 1);
+                            if (end != -1)
+                            {
+                                string tagName = response.Substring(start + 1, end - start - 1);
+                                string cleanTag = tagName.TrimStart('v', 'V');
+                                
+                                if (Version.TryParse(cleanTag, out Version? latestVersion) && latestVersion != null)
+                                {
+                                    var currentVersion = typeof(AudioWidgetForm).Assembly.GetName().Version;
+                                    if (currentVersion != null && latestVersion > currentVersion)
+                                    {
+                                        string curVerStr = currentVersion.ToString(3);
+                                        string latVerStr = latestVersion.ToString(3);
+                                        this.BeginInvoke(new Action(() => {
+                                            ShowUpdateDialog(curVerStr, latVerStr);
+                                        }));
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                try {
+                    System.IO.File.AppendAllText(
+                        System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "updaterlog.txt"),
+                        "Update check error: " + ex.Message + "\n"
+                    );
+                } catch {}
+            }
+        }
+
+        private void ShowUpdateDialog(string currentVer, string latestVer)
+        {
+            using (var updateForm = new UpdateForm(currentVer, latestVer, isDarkMode))
+            {
+                updateForm.ShowDialog(this);
+            }
         }
     }
 }

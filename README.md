@@ -23,7 +23,11 @@ This is an extremely lightweight, stable, and convenient Windows 11 utility that
 
 ## Release History & Changelog
 
-### v3.1.1 (Current Version)
+### v3.2.0 (Current Version)
+This minor release introduces automatic updates check.
+* **Auto-Update Checker:** Added an asynchronous background check at startup querying the GitHub API for newer releases, showing a modern, styled alert dialog with current/new version info and a quick link to GitHub if an update is found.
+
+### v3.1.1
 This patch release resolves a layout race condition when pinning applications.
 * **Taskbar Tray Overlap Fix:** Replaced asynchronous WinForms width updates with atomic `Bounds` updates, ensuring the widget grows to the left (towards the Start button) and never covers the system tray icons (clock, hidden icons arrow) when pinning multiple applications.
 
