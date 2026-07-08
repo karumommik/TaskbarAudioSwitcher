@@ -23,7 +23,17 @@ This is an extremely lightweight, stable, and convenient Windows 11 utility that
 
 ## Release History & Changelog
 
-### v1.3.0 (Current Version)
+### v2.0.0 (Current Version)
+This major release modernizes the application's framework and architecture, transforming it from a legacy .NET 4.0 monolith to a modular .NET 8.0 project with standalone build support.
+* **Modern .NET 8.0 Migration:** Replaced the obsolete .NET Framework 4.0 target. The application now runs on CoreCLR, benefiting from modern runtime speed, optimized Garbage Collection (GC) to minimize taustal/background CPU ticks, and native COM interop performance.
+* **Modular Codebase Architecture:** Decomposed the massive 3000-line single-file monolith (`Program.cs`) into a clean, object-oriented directory structure:
+  - `Native/` for Core Audio COM and Win32 P/Invokes.
+  - `Core/` for application settings and helper utilities.
+  - `Controls/` for custom drawn controls (`IconButton`, `VolumeSlider`).
+  - `UI/` for layout forms (`AudioWidgetForm`, `SettingsForm`).
+* **Self-Contained Publish Support:** Created a modern build pipeline via `build.bat` that bundles the .NET runtime into a single, optimized, standalone executable. Users no longer need to compile locally with raw compiler hacks or have the .NET runtime preinstalled.
+
+### v1.3.0
 This major update introduces device custom nicknames, interactive volume scroll step settings, silent application filtering, a dedicated monitor switch button, and full high-DPI scaling.
 * **Device Custom Nicknames:** Added small textboxes next to the device checkboxes in the settings dialog, allowing you to define custom 3-letter nicknames/abbreviations for your output devices (e.g. `KLA` for klapid, `MÄN` for gaming headphones). If left empty, it falls back to the first 3 letters of the system name.
 * **Hide Silent Apps in Mixer:** Added a "Hide silent apps" checkbox directly at the top of the expanded mixer panel. When checked, it filters out applications whose WASAPI audio session states are currently inactive, automatically resizing the mixer window to save space.
@@ -69,9 +79,10 @@ As a result, you might notice some specific behaviors:
 
 ## Installation and Running
 ### 1. Compile and Run
-Double-click the convenient `compile.bat` file included in the folder.
-- This compiles the C# code directly using the local built-in Windows C# compiler (`csc.exe`).
-- The `TaskbarAudioSwitcher.exe` file will be created in the same folder and launched automatically.
+To compile the application, you need the **.NET 8.0 SDK** (or higher) installed on your machine.
+- Double-click the `build.bat` file in the folder.
+- This script checks for the .NET SDK and runs a self-contained single-file publish (`dotnet publish`).
+- The optimized executable `TaskbarAudioSwitcher.exe` will be generated in the `build/` directory.
 ### 2. Auto-start with Windows
 - Right-click the blue speaker icon in the system tray.
 - Select **"Run at Windows Startup"**. This adds the program to the registry (`HKCU\Software\Microsoft\Windows\CurrentVersion\Run`).

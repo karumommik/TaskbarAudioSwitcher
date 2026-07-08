@@ -3,6 +3,9 @@
 
 # Binaries
 *.exe
+bin/
+obj/
+build/
 
 # Local settings
 settings.txt
