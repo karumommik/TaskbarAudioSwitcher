@@ -64,6 +64,7 @@ namespace TaskbarAudioSwitcher.UI
             public bool Mute;
             public string Name = string.Empty;
             public Icon? Icon;
+            public int State;
         }
 
         private class PinnedAppControls
@@ -456,16 +457,12 @@ namespace TaskbarAudioSwitcher.UI
             {
                 audioStateTickCounter = 0;
                 RefreshAudioState();
+                RefreshMixerSessions();
             }
 
             // 3. Fast Mixer & Position check (every tick / 100ms)
             if (isExpanded)
             {
-                // Refresh mixer sessions at same rate as before (every 500ms / 5 ticks of 100ms)
-                if (audioStateTickCounter == 0)
-                {
-                    RefreshMixerSessions();
-                }
 
                 IntPtr activeHwnd = Win32.GetForegroundWindow();
                 if (activeHwnd != IntPtr.Zero && activeHwnd != this.Handle && !Win32.IsChild(this.Handle, activeHwnd))
@@ -992,7 +989,7 @@ namespace TaskbarAudioSwitcher.UI
                     Win32.RECT rectTray;
                     if (notifyHwnd != IntPtr.Zero && Win32.GetWindowRect(notifyHwnd, out rectTray))
                     {
-                        targetLeft = (int)(rectTray.Left / scale) - calculatedWidth - (int)(12 * scale);
+                        targetLeft = (int)(rectTray.Left / scale) - calculatedWidth - (int)(48 * scale);
                     }
                     else
                     {
@@ -1334,15 +1331,13 @@ namespace TaskbarAudioSwitcher.UI
 
         private void RefreshMixerSessions()
         {
-            if (!isExpanded) return;
-
             try { System.IO.File.AppendAllText(System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "mixerlog.txt"), "--- Refresh Sessions Start ---\n"); } catch {}
 
             IMMDevice? defaultDev = null;
             IAudioSessionManager2? manager = null;
             IAudioSessionEnumerator? sessionEnum = null;
             object? volumeObj = null;
-            var activeSessions = new List<SessionData>();
+            var allSessions = new List<SessionData>();
             int count = -1;
 
             try
@@ -1366,24 +1361,12 @@ namespace TaskbarAudioSwitcher.UI
                             try
                             {
                                 int hrGet = sessionEnum.GetSession(i, out sessionCtrl);
-                                if (hrGet != 0 || sessionCtrl == null)
-                                {
-                                    try { System.IO.File.AppendAllText(System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "mixerlog.txt"), string.Format("GetSession {0} failed: hr=0x{1:X8}, sessionCtrl is null={2}\n", i, hrGet, sessionCtrl == null)); } catch {}
-                                }
-
                                 if (hrGet == 0 && sessionCtrl != null)
                                 {
                                     int state = 0;
                                     sessionCtrl.GetState(out state);
                                     if (state == 2)
                                     {
-                                        try { System.IO.File.AppendAllText(System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "mixerlog.txt"), string.Format("Session {0}: Skipped state={1} (Expired)\n", i, state)); } catch {}
-                                        SafeRelease(sessionCtrl);
-                                        continue;
-                                    }
-                                    if (settings.HideSilentApps && state == 0)
-                                    {
-                                        try { System.IO.File.AppendAllText(System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "mixerlog.txt"), string.Format("Session {0}: Skipped state={1} (Inactive/Silent mode active)\n", i, state)); } catch {}
                                         SafeRelease(sessionCtrl);
                                         continue;
                                     }
@@ -1391,11 +1374,6 @@ namespace TaskbarAudioSwitcher.UI
                                     IAudioSessionControl2? sessionCtrl2 = sessionCtrl as IAudioSessionControl2;
                                     ISimpleAudioVolume? simpleVol = sessionCtrl as ISimpleAudioVolume;
                                     
-                                    if (sessionCtrl2 == null || simpleVol == null)
-                                    {
-                                        try { System.IO.File.AppendAllText(System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "mixerlog.txt"), string.Format("Session {0}: sessionCtrl2 is null={1}, simpleVol is null={2}\n", i, sessionCtrl2 == null, simpleVol == null)); } catch {}
-                                    }
-
                                     if (sessionCtrl2 != null && simpleVol != null)
                                     {
                                         int pid = 0;
@@ -1412,7 +1390,6 @@ namespace TaskbarAudioSwitcher.UI
                                         else
                                         {
                                             sessionId = "Session_PID_" + pid + "_" + i;
-                                            try { System.IO.File.AppendAllText(System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "mixerlog.txt"), string.Format("Session {0}: GetSessionIdentifier failed hr=0x{1:X8}, using fallback '{2}'\n", i, hrId, sessionId)); } catch {}
                                         }
 
                                         bool isSystem = (sessionCtrl2.IsSystemSoundsSession() == 0);
@@ -1429,7 +1406,7 @@ namespace TaskbarAudioSwitcher.UI
 
                                         if (sessionId != null)
                                         {
-                                            activeSessions.Add(new SessionData
+                                            allSessions.Add(new SessionData
                                             {
                                                 SessionId = sessionId,
                                                 ProcessId = pid,
@@ -1437,7 +1414,8 @@ namespace TaskbarAudioSwitcher.UI
                                                 Volume = vol,
                                                 Mute = mute,
                                                 Name = name,
-                                                Icon = icon
+                                                Icon = icon,
+                                                State = state
                                             });
                                         }
                                     }
@@ -1457,12 +1435,7 @@ namespace TaskbarAudioSwitcher.UI
                 {
                     System.IO.File.AppendAllText(System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "mixerlog.txt"),
                         string.Format("Summary: hr=0x{0:X8}, Activate hr=0x{1:X8}, count={2}, active={3}\n", 
-                            hr, hrActivate, count, activeSessions.Count));
-                    foreach (var s in activeSessions)
-                    {
-                        System.IO.File.AppendAllText(System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "mixerlog.txt"),
-                            string.Format("Session: Name='{0}', PID={1}, System={2}, Vol={3}\n", s.Name, s.ProcessId, s.IsSystemSounds, s.Volume));
-                    }
+                            hr, hrActivate, count, allSessions.Count));
                 }
                 catch {}
             }
@@ -1478,86 +1451,90 @@ namespace TaskbarAudioSwitcher.UI
                 SafeRelease(defaultDev);
             }
 
-            // Find current screen to limit height to screen bounds dynamically
-            Screen? currentScr = null;
-            if (!string.IsNullOrEmpty(settings.ScreenDeviceName))
+            if (isExpanded)
             {
-                foreach (var s in Screen.AllScreens)
+                var activeSessions = new List<SessionData>();
+                foreach (var s in allSessions)
                 {
-                    if (s.DeviceName == settings.ScreenDeviceName)
+                    if (settings.HideSilentApps && s.State == 0)
+                        continue;
+                    activeSessions.Add(s);
+                }
+
+                // Find current screen to limit height to screen bounds dynamically
+                Screen? currentScr = null;
+                if (!string.IsNullOrEmpty(settings.ScreenDeviceName))
+                {
+                    foreach (var s in Screen.AllScreens)
                     {
-                        currentScr = s;
-                        break;
+                        if (s.DeviceName == settings.ScreenDeviceName)
+                        {
+                            currentScr = s;
+                            break;
+                        }
+                    }
+                }
+                if (currentScr == null)
+                {
+                    int scrIdx = Math.Max(0, Math.Min(Screen.AllScreens.Length - 1, settings.ScreenIndex));
+                    currentScr = Screen.AllScreens[scrIdx];
+                }
+
+                float scale = DpiHelper.GetScale(this.Handle);
+                int maxPanelHeight = currentScr.Bounds.Height - (int)(120 * scale); // safe margin for taskbar and padding
+                int displayCount = activeSessions.Count;
+                int headerH = (int)(24 * scale); // Height of the "Hide silent apps" checkbox at the top
+                
+                // Adjust minimum height to prevent scrollbars when there are no active sessions to display
+                int minHeight = (displayCount == 0) ? (int)(68 * scale) : (int)(52 * scale);
+                int calculatedPanelHeight = Math.Max(minHeight, Math.Min(maxPanelHeight, displayCount * (int)(36 * scale) + (int)(16 * scale) + headerH));
+                int newHeight = calculatedPanelHeight + GetCollapsedHeight();
+                
+                if (this.Height != newHeight)
+                {
+                    this.Height = newHeight;
+                    UpdateLayout();
+                    UpdatePosition();
+                }
+
+                // Check if sessions changed
+                bool changed = (activeSessions.Count != mixerRows.Count);
+                if (!changed)
+                {
+                    for (int i = 0; i < activeSessions.Count; i++)
+                    {
+                        if (activeSessions[i].SessionId != mixerRows[i].SessionId)
+                        {
+                            changed = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (changed)
+                {
+                    ClearMixerRows();
+                    BuildMixerRows(activeSessions);
+                }
+                else
+                {
+                    // Just update volumes
+                    for (int i = 0; i < activeSessions.Count; i++)
+                    {
+                        var row = mixerRows[i];
+                        var data = activeSessions[i];
+                        if (row.Slider != null && !row.Slider.IsDragging)
+                        {
+                            row.Slider.UpdateValue(data.Volume);
+                            row.VolLabel.Text = string.Format("{0:0}%", data.Volume * 100);
+                        }
                     }
                 }
             }
-            if (currentScr == null)
-            {
-                int scrIdx = Math.Max(0, Math.Min(Screen.AllScreens.Length - 1, settings.ScreenIndex));
-                currentScr = Screen.AllScreens[scrIdx];
-            }
 
-            float scale = DpiHelper.GetScale(this.Handle);
-            int maxPanelHeight = currentScr.Bounds.Height - (int)(120 * scale); // safe margin for taskbar and padding
-            int displayCount = activeSessions.Count;
-            int headerH = (int)(24 * scale); // Height of the "Hide silent apps" checkbox at the top
-            
-            // Adjust minimum height to prevent scrollbars when there are no active sessions to display
-            int minHeight = (displayCount == 0) ? (int)(68 * scale) : (int)(52 * scale);
-            int calculatedPanelHeight = Math.Max(minHeight, Math.Min(maxPanelHeight, displayCount * (int)(36 * scale) + (int)(16 * scale) + headerH));
-            int newHeight = calculatedPanelHeight + GetCollapsedHeight();
-            
-            try {
-                System.IO.File.AppendAllText(
-                    System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "mixerlog.txt"),
-                    string.Format("HeightCheck: CurrentHeight={0}, NewHeight={1}, isExpanded={2}\n", 
-                        this.Height, newHeight, isExpanded)
-                );
-            } catch {}
-
-            if (this.Height != newHeight)
-            {
-                this.Height = newHeight;
-                UpdateLayout();
-                UpdatePosition();
-            }
-
-            // Check if sessions changed
-            bool changed = (activeSessions.Count != mixerRows.Count);
-            if (!changed)
-            {
-                for (int i = 0; i < activeSessions.Count; i++)
-                {
-                    if (activeSessions[i].SessionId != mixerRows[i].SessionId)
-                    {
-                        changed = true;
-                        break;
-                    }
-                }
-            }
-
-            if (changed)
-            {
-                ClearMixerRows();
-                BuildMixerRows(activeSessions);
-            }
-            else
-            {
-                // Just update volumes
-                for (int i = 0; i < activeSessions.Count; i++)
-                {
-                    var row = mixerRows[i];
-                    var data = activeSessions[i];
-                    if (row.Slider != null && !row.Slider.IsDragging)
-                    {
-                        row.Slider.UpdateValue(data.Volume);
-                        row.VolLabel.Text = string.Format("{0:0}%", data.Volume * 100);
-                    }
-                }
-            }
-
-            SyncPinnedControls(activeSessions);
+            SyncPinnedControls(allSessions);
         }
+
 
         private void SyncPinnedControls(List<SessionData> activeSessions)
         {
