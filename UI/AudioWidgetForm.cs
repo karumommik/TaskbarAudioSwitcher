@@ -19,18 +19,18 @@ namespace TaskbarAudioSwitcher.UI
         
         // UI Controls
         private List<IconButton> btnDevices = new List<IconButton>();
-        private IconButton btnMute;
-        private VolumeSlider sliderVolume;
-        private Label lblVolumeText;
-        private System.Windows.Forms.Timer updateTimer;
-        private ToolTip toolTip;
+        private IconButton btnMute = null!;
+        private VolumeSlider sliderVolume = null!;
+        private Label lblVolumeText = null!;
+        private System.Windows.Forms.Timer updateTimer = null!;
+        private ToolTip toolTip = null!;
         private NotifyIcon notifyIcon = null!;
 
         // Mixer panel variables
         private bool isExpanded = false;
-        private Panel pnlMixer;
-        private IconButton btnMixer;
-        private IconButton btnScreenMove;
+        private Panel pnlMixer = null!;
+        private IconButton btnMixer = null!;
+        private IconButton btnScreenMove = null!;
         private List<MixerRow> mixerRows = new List<MixerRow>();
         private int gcCounter = 0;
         private int themeColorsTickCounter = 0;
@@ -779,7 +779,7 @@ namespace TaskbarAudioSwitcher.UI
                     System.IO.File.AppendAllText(
                         System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "mixerlog.txt"),
                         string.Format("Layout: FormHeight={0}, baseY={1}, pnlMixerLoc={2}, pnlMixerSize={3}, btnMuteLoc={4}, btnMixerLoc={5}\n",
-                            this.Height, baseY, pnlMixer.Location, pnlMixer.Size, btnMute.Location, btnMixer.Location)
+                            this.Height, baseY, pnlMixer?.Location, pnlMixer?.Size, btnMute?.Location, btnMixer?.Location)
                     );
                 } catch {}
             }
