@@ -793,6 +793,8 @@ namespace TaskbarAudioSwitcher.UI
 
         private void UpdatePosition()
         {
+            float scale = DpiHelper.GetScale(this.Handle);
+
             // Restore window if minimized or hidden (e.g. by Win+D / Show Desktop)
             if (this.WindowState == FormWindowState.Minimized)
             {
@@ -800,7 +802,7 @@ namespace TaskbarAudioSwitcher.UI
                 {
                     isExpanded = false;
                     pnlMixer.Visible = false;
-                    this.Height = 36;
+                    this.Height = (int)(36 * scale);
                     UpdateLayout();
                     ClearMixerRows();
                 }
@@ -910,16 +912,16 @@ namespace TaskbarAudioSwitcher.UI
                 foundTaskbar = true;
             }
 
-            int taskbarTop = bounds.Bottom - 48;
-            int taskbarHeight = 48;
+            int taskbarTop = bounds.Bottom - (int)(48 * scale);
+            int taskbarHeight = (int)(48 * scale);
 
             if (foundTaskbar)
             {
-                taskbarTop = rectTaskbar.Top;
-                taskbarHeight = rectTaskbar.Bottom - rectTaskbar.Top;
+                taskbarTop = (int)(rectTaskbar.Top / scale);
+                taskbarHeight = (int)((rectTaskbar.Bottom - rectTaskbar.Top) / scale);
             }
 
-            int collapsedHeight = 36;
+            int collapsedHeight = (int)(36 * scale);
             int targetTop = taskbarTop + (taskbarHeight - collapsedHeight) / 2;
             if (isExpanded)
             {
@@ -932,9 +934,9 @@ namespace TaskbarAudioSwitcher.UI
             if (currentAlignment == "Left")
             {
                 if (scr.Primary)
-                    targetLeft = bounds.Left + 84;
+                    targetLeft = bounds.Left + (int)(84 * scale);
                 else
-                    targetLeft = bounds.Left + 12;
+                    targetLeft = bounds.Left + (int)(12 * scale);
             }
             else // "Right"
             {
@@ -944,16 +946,16 @@ namespace TaskbarAudioSwitcher.UI
                     Win32.RECT rectTray;
                     if (notifyHwnd != IntPtr.Zero && Win32.GetWindowRect(notifyHwnd, out rectTray))
                     {
-                        targetLeft = rectTray.Left - this.Width - 12;
+                        targetLeft = (int)(rectTray.Left / scale) - this.Width - (int)(12 * scale);
                     }
                     else
                     {
-                        targetLeft = bounds.Right - this.Width - 200;
+                        targetLeft = bounds.Right - this.Width - (int)(200 * scale);
                     }
                 }
                 else
                 {
-                    targetLeft = bounds.Right - this.Width - 16;
+                    targetLeft = bounds.Right - this.Width - (int)(16 * scale);
                 }
             }
 
