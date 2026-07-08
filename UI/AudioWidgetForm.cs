@@ -902,24 +902,11 @@ namespace TaskbarAudioSwitcher.UI
 
             var bounds = scr.Bounds;
 
+            // Use DPI-aware Screen WorkingArea to get taskbar position and height
+            int taskbarTop = scr.WorkingArea.Bottom;
+            int taskbarHeight = scr.Bounds.Bottom - scr.WorkingArea.Bottom;
+
             IntPtr trayHwnd = Win32.FindWindow("Shell_TrayWnd", null);
-            Win32.RECT rectTaskbar = new Win32.RECT();
-            bool foundTaskbar = false;
-
-            if (scr.Primary && trayHwnd != IntPtr.Zero)
-            {
-                Win32.GetWindowRect(trayHwnd, out rectTaskbar);
-                foundTaskbar = true;
-            }
-
-            int taskbarTop = bounds.Bottom - (int)(48 * scale);
-            int taskbarHeight = (int)(48 * scale);
-
-            if (foundTaskbar)
-            {
-                taskbarTop = (int)(rectTaskbar.Top / scale);
-                taskbarHeight = (int)((rectTaskbar.Bottom - rectTaskbar.Top) / scale);
-            }
 
             int collapsedHeight = (int)(36 * scale);
             int targetTop = taskbarTop + (taskbarHeight - collapsedHeight) / 2;
