@@ -23,7 +23,13 @@ This is an extremely lightweight, stable, and convenient Windows 11 utility that
 
 ## Release History & Changelog
 
-### v3.0.1 (Current Version)
+### v3.1.0 (Current Version)
+This minor release introduces app-specific volume pinning.
+* **Pin Applications to Taskbar:** Added a "Pin" icon next to each application row in the mixer. Users can pin up to 2 active audio-playing applications (e.g., Firefox, Spotify) to display their individual volume sliders directly on the main taskbar widget for quick adjustment.
+* **Auto-Cleanup and Persistence:** Pinned volume sliders are kept in sync with active sessions. If a pinned application is closed or stops playing audio, its pinned slider is automatically removed from the taskbar widget.
+* **Interactive Scroll Control:** Mouse-wheel scrolling over pinned application sliders adjusts that specific application's volume directly from the taskbar.
+
+### v3.0.1
 This patch release resolves layout positioning and performance stutters.
 * **WorkingArea Y-Positioning Fix:** Replaced fragile Win32 `GetWindowRect` on the taskbar with DPI-aware `Screen.WorkingArea`, ensuring the widget aligns perfectly at the bottom of the screen after monitor focus switches or screen locks.
 * **Mixer Session Caching:** Implemented in-memory caching for process names and icons in the volume mixer, preventing micro-stutters and cutting CPU spikes when the mixer panel is open.

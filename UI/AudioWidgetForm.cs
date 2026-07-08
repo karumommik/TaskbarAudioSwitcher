@@ -55,16 +55,28 @@ namespace TaskbarAudioSwitcher.UI
             public Label VolLabel { get; set; } = null!;
         }
 
-        private struct SessionData
+        private class SessionData
         {
-            public string SessionId;
+            public string SessionId = string.Empty;
             public int ProcessId;
             public bool IsSystemSounds;
             public float Volume;
             public bool Mute;
-            public string Name;
+            public string Name = string.Empty;
             public Icon? Icon;
         }
+
+        private class PinnedAppControls
+        {
+            public string SessionId { get; set; } = string.Empty;
+            public string ProcessName { get; set; } = string.Empty;
+            public PictureBox? IconBox { get; set; }
+            public Label? IconLabel { get; set; }
+            public VolumeSlider Slider { get; set; } = null!;
+            public Label VolLabel { get; set; } = null!;
+        }
+        private List<string> pinnedSessionIds = new List<string>();
+        private List<PinnedAppControls> pinnedControlsList = new List<PinnedAppControls>();
 
         // Layout variables
         private int separatorX = 0;
@@ -414,6 +426,16 @@ namespace TaskbarAudioSwitcher.UI
                 pnlMixer.BackColor = themeBgColor;
             }
 
+            if (pinnedControlsList != null)
+            {
+                foreach (var pc in pinnedControlsList)
+                {
+                    if (pc.IconLabel != null) pc.IconLabel.ForeColor = themeTextColor;
+                    pc.Slider.ActiveColor = themeActiveBgColor;
+                    pc.VolLabel.ForeColor = themeTextColor;
+                }
+            }
+
             this.Invalidate();
         }
 
@@ -751,6 +773,45 @@ namespace TaskbarAudioSwitcher.UI
             lblVolumeText.Location = new Point(currentX, baseY + (int)(10 * scale));
 
             currentX += textW + margin;
+
+            // Layout pinned applications controls
+            if (pinnedControlsList != null)
+            {
+                foreach (var pinned in pinnedControlsList)
+                {
+                    int itemSize = (int)(20 * scale);
+                    int pinSliderW = (int)(60 * scale);
+
+                    currentX += margin;
+
+                    if (pinned.IconBox != null)
+                    {
+                        pinned.IconBox.Size = new Size(itemSize, itemSize);
+                        pinned.IconBox.Location = new Point(currentX, baseY + (int)(8 * scale));
+                        pinned.IconBox.BackColor = themeBgColor;
+                        currentX += itemSize + margin;
+                    }
+                    else if (pinned.IconLabel != null)
+                    {
+                        pinned.IconLabel.Size = new Size(itemSize, itemSize);
+                        pinned.IconLabel.Location = new Point(currentX, baseY + (int)(8 * scale));
+                        pinned.IconLabel.BackColor = themeBgColor;
+                        currentX += itemSize + margin;
+                    }
+
+                    pinned.Slider.Size = new Size(pinSliderW, (int)(8 * scale));
+                    pinned.Slider.Location = new Point(currentX, baseY + (int)(14 * scale));
+                    pinned.Slider.BackColor = themeBgColor;
+                    currentX += pinSliderW + margin;
+
+                    pinned.VolLabel.Font = new Font("Segoe UI", 7.5f * scale, FontStyle.Regular);
+                    pinned.VolLabel.Size = new Size(textW, (int)(16 * scale));
+                    pinned.VolLabel.Location = new Point(currentX, baseY + (int)(10 * scale));
+                    pinned.VolLabel.BackColor = themeBgColor;
+                    currentX += textW + margin;
+                }
+            }
+
             if (btnMixer != null)
             {
                 btnMixer.Size = new Size(btnSize, btnSize);
@@ -1058,6 +1119,40 @@ namespace TaskbarAudioSwitcher.UI
             if (hme != null && hme.Handled) return;
 
             Control? senderControl = sender as Control;
+
+            PinnedAppControls? matchedPinned = null;
+            if (senderControl != null && pinnedControlsList != null)
+            {
+                foreach (var pc in pinnedControlsList)
+                {
+                    if (senderControl == pc.Slider ||
+                        senderControl == pc.IconBox ||
+                        senderControl == pc.IconLabel ||
+                        senderControl == pc.VolLabel)
+                    {
+                        matchedPinned = pc;
+                        break;
+                    }
+                }
+            }
+
+            if (matchedPinned != null)
+            {
+                float currentVal = matchedPinned.Slider.Value;
+                float step = (e.Delta > 0) ? (settings.ScrollStep / 100f) : -(settings.ScrollStep / 100f);
+                float newVal = Math.Max(0.0f, Math.Min(1.0f, currentVal + step));
+
+                SetSessionVolume(matchedPinned.SessionId, newVal);
+                matchedPinned.Slider.UpdateValue(newVal);
+                matchedPinned.VolLabel.Text = string.Format("{0:0}%", newVal * 100);
+
+                if (hme != null)
+                {
+                    hme.Handled = true;
+                }
+                return;
+            }
+
             MixerRow? matchedRow = null;
             if (senderControl != null && isExpanded)
             {
@@ -1462,7 +1557,162 @@ namespace TaskbarAudioSwitcher.UI
                     }
                 }
             }
+
+            SyncPinnedControls(activeSessions);
         }
+
+        private void SyncPinnedControls(List<SessionData> activeSessions)
+        {
+            float scale = DpiHelper.GetScale(this.Handle);
+            int margin = (int)(4 * scale);
+
+            // 1. Clean up pinnedSessionIds: remove any ID that is no longer in activeSessions
+            var activeIds = new List<string>();
+            foreach (var s in activeSessions) activeIds.Add(s.SessionId);
+            
+            var deadPins = new List<string>();
+            foreach (var pinId in pinnedSessionIds)
+            {
+                if (!activeIds.Contains(pinId))
+                {
+                    deadPins.Add(pinId);
+                }
+            }
+            foreach (var dead in deadPins)
+            {
+                pinnedSessionIds.Remove(dead);
+            }
+
+            // 2. Remove controls for sessions that are no longer pinned
+            var toRemove = new List<PinnedAppControls>();
+            foreach (var pc in pinnedControlsList)
+            {
+                if (!pinnedSessionIds.Contains(pc.SessionId))
+                {
+                    toRemove.Add(pc);
+                }
+            }
+            foreach (var pc in toRemove)
+            {
+                if (pc.IconBox != null) this.Controls.Remove(pc.IconBox);
+                if (pc.IconLabel != null) this.Controls.Remove(pc.IconLabel);
+                this.Controls.Remove(pc.Slider);
+                this.Controls.Remove(pc.VolLabel);
+                
+                pc.IconBox?.Image?.Dispose();
+                pc.IconBox?.Dispose();
+                pc.IconLabel?.Dispose();
+                pc.Slider.Dispose();
+                pc.VolLabel.Dispose();
+                
+                pinnedControlsList.Remove(pc);
+            }
+
+            // 3. Add controls for newly pinned sessions
+            bool layoutChanged = false;
+            foreach (var pinId in pinnedSessionIds)
+            {
+                var pc = pinnedControlsList.Find(x => x.SessionId == pinId);
+                var data = activeSessions.Find(x => x.SessionId == pinId);
+                if (data == null) continue;
+
+                if (pc == null)
+                {
+                    PictureBox? iconBox = null;
+                    Label? iconLabel = null;
+
+                    if (data.Icon != null)
+                    {
+                        iconBox = new PictureBox
+                        {
+                            Image = data.Icon.ToBitmap(),
+                            SizeMode = PictureBoxSizeMode.StretchImage,
+                            BackColor = themeBgColor
+                        };
+                        this.Controls.Add(iconBox);
+                    }
+                    else
+                    {
+                        iconLabel = new Label
+                        {
+                            Font = new Font("Segoe MDL2 Assets", 8f * scale),
+                            ForeColor = themeTextColor,
+                            Text = data.IsSystemSounds ? "\uE767" : "\uE715",
+                            TextAlign = ContentAlignment.MiddleCenter,
+                            BackColor = themeBgColor
+                        };
+                        this.Controls.Add(iconLabel);
+                    }
+
+                    VolumeSlider slider = new VolumeSlider
+                    {
+                        ActiveColor = themeActiveBgColor,
+                        InactiveColor = Color.FromArgb(80, 128, 128, 128),
+                        BackColor = themeBgColor
+                    };
+                    slider.UpdateValue(data.Volume);
+                    string sid = pinId;
+                    slider.ValueChanged += (s, ev) => {
+                        SetSessionVolume(sid, slider.Value);
+                        var item = pinnedControlsList.Find(x => x.SessionId == sid);
+                        if (item != null)
+                        {
+                            item.VolLabel.Text = string.Format("{0:0}%", slider.Value * 100);
+                        }
+                    };
+                    slider.MouseWheel += Form_MouseWheel;
+                    this.Controls.Add(slider);
+
+                    Label volLabel = new Label
+                    {
+                        Font = new Font("Segoe UI", 7.5f * scale),
+                        ForeColor = themeTextColor,
+                        Text = string.Format("{0:0}%", data.Volume * 100),
+                        TextAlign = ContentAlignment.MiddleLeft,
+                        BackColor = themeBgColor
+                    };
+                    volLabel.MouseWheel += Form_MouseWheel;
+                    this.Controls.Add(volLabel);
+
+                    if (iconBox != null)
+                    {
+                        iconBox.MouseWheel += Form_MouseWheel;
+                        toolTip.SetToolTip(iconBox, data.Name);
+                    }
+                    if (iconLabel != null)
+                    {
+                        iconLabel.MouseWheel += Form_MouseWheel;
+                        toolTip.SetToolTip(iconLabel, data.Name);
+                    }
+                    toolTip.SetToolTip(slider, data.Name + " Volume");
+
+                    pinnedControlsList.Add(new PinnedAppControls
+                    {
+                        SessionId = pinId,
+                        ProcessName = data.Name,
+                        IconBox = iconBox,
+                        IconLabel = iconLabel,
+                        Slider = slider,
+                        VolLabel = volLabel
+                    });
+                    layoutChanged = true;
+                }
+                else
+                {
+                    if (!pc.Slider.IsDragging)
+                    {
+                        pc.Slider.UpdateValue(data.Volume);
+                        pc.VolLabel.Text = string.Format("{0:0}%", data.Volume * 100);
+                    }
+                }
+            }
+
+            if (layoutChanged || toRemove.Count > 0)
+            {
+                UpdateLayout();
+            }
+        }
+
 
         private void BuildMixerRows(List<SessionData> sessions)
         {
@@ -1522,6 +1772,42 @@ namespace TaskbarAudioSwitcher.UI
                         BackColor = themeBgColor
                     };
                     
+                    IconButton btnPin = new IconButton
+                    {
+                        Location = new Point((int)(8 * scale), (int)(9 * scale)),
+                        Size = new Size((int)(18 * scale), (int)(18 * scale)),
+                        Glyph = pinnedSessionIds.Contains(sid) ? "\uE77A" : "\uE718",
+                        ForeColor = themeTextColor,
+                        HoverBgColor = themeHoverBgColor,
+                        ActiveBgColor = Color.Transparent,
+                        IsActive = false,
+                        Font = new Font("Segoe MDL2 Assets", 7.5f * scale)
+                    };
+                    toolTip.SetToolTip(btnPin, pinnedSessionIds.Contains(sid) ? "Unpin from taskbar" : "Pin to taskbar");
+
+                    btnPin.Click += (s, ev) => {
+                        if (pinnedSessionIds.Contains(sid))
+                        {
+                            pinnedSessionIds.Remove(sid);
+                            btnPin.Glyph = "\uE718";
+                            toolTip.SetToolTip(btnPin, "Pin to taskbar");
+                        }
+                        else
+                        {
+                            if (pinnedSessionIds.Count >= 2)
+                            {
+                                toolTip.Show("Maksimaalselt saab pinida 2 rakendust!", btnPin, 2000);
+                                return;
+                            }
+                            pinnedSessionIds.Add(sid);
+                            btnPin.Glyph = "\uE77A";
+                            toolTip.SetToolTip(btnPin, "Unpin from taskbar");
+                        }
+                        
+                        SyncPinnedControls(sessions);
+                    };
+                    rowPanel.Controls.Add(btnPin);
+
                     PictureBox? iconBox = null;
                     Label? iconLabel = null;
                     
@@ -1529,7 +1815,7 @@ namespace TaskbarAudioSwitcher.UI
                     {
                         iconBox = new PictureBox
                         {
-                            Location = new Point((int)(8 * scale), (int)(10 * scale)),
+                            Location = new Point((int)(30 * scale), (int)(10 * scale)),
                             Size = new Size((int)(16 * scale), (int)(16 * scale)),
                             Image = data.Icon.ToBitmap(),
                             SizeMode = PictureBoxSizeMode.StretchImage,
@@ -1541,7 +1827,7 @@ namespace TaskbarAudioSwitcher.UI
                     {
                         iconLabel = new Label
                         {
-                            Location = new Point((int)(8 * scale), (int)(8 * scale)),
+                            Location = new Point((int)(30 * scale), (int)(8 * scale)),
                             Size = new Size((int)(16 * scale), (int)(16 * scale)),
                             Font = new Font("Segoe MDL2 Assets", 8f * scale),
                             ForeColor = themeTextColor,
@@ -1554,13 +1840,14 @@ namespace TaskbarAudioSwitcher.UI
                     
                     Label nameLabel = new Label
                     {
-                        Location = new Point((int)(28 * scale), (int)(10 * scale)),
-                        Size = new Size((int)(80 * scale), (int)(16 * scale)),
+                        Location = new Point((int)(52 * scale), (int)(10 * scale)),
+                        Size = new Size((int)(56 * scale), (int)(16 * scale)),
                         Font = new Font("Segoe UI", 8f * scale),
                         ForeColor = themeTextColor,
                         Text = data.Name,
                         TextAlign = ContentAlignment.MiddleLeft,
-                        BackColor = themeBgColor
+                        BackColor = themeBgColor,
+                        AutoEllipsis = true
                     };
                     rowPanel.Controls.Add(nameLabel);
                     
