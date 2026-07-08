@@ -1690,7 +1690,8 @@ namespace TaskbarAudioSwitcher.UI
 
         private void GetSessionInfo(int pid, bool isSystem, out string name, out Icon? icon)
         {
-            name = "Süsteemi helid";
+            bool isEst = System.Globalization.CultureInfo.CurrentCulture.TwoLetterISOLanguageName.Equals("et", StringComparison.OrdinalIgnoreCase);
+            name = isEst ? "Süsteemi helid" : "System Sounds";
             icon = null;
 
             if (isSystem || pid == 0)
@@ -1718,7 +1719,7 @@ namespace TaskbarAudioSwitcher.UI
             }
             catch
             {
-                name = "Rakendus (PID " + pid + ")";
+                name = isEst ? ("Rakendus (PID " + pid + ")") : ("Application (PID " + pid + ")");
             }
         }
 
