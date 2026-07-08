@@ -78,13 +78,23 @@ As a result, you might notice some specific behaviors:
 * **Focus Safety:** Clicking the utility or adjusting volumes does not steal focus from your active windows or games, meaning you won't be accidentally tabbed out of your active application.
 
 ## Installation and Running
-### 1. Compile and Run
-To compile the application, you need the **.NET 10.0 SDK** (or higher) installed on your machine.
-- Double-click the `build.bat` file in the folder.
-- This script checks for the .NET SDK and runs a self-contained single-file publish (`dotnet publish`).
-- The optimized executable `TaskbarAudioSwitcher.exe` will be generated in the `build/` directory.
-### 2. Auto-start with Windows
-- Right-click the blue speaker icon in the system tray.
-- Select **"Run at Windows Startup"**. This adds the program to the registry (`HKCU\Software\Microsoft\Windows\CurrentVersion\Run`).
-### 3. Exit
-- Right-click the blue icon in the system tray and select **"Exit"**.
+
+You can choose between downloading the precompiled, ready-to-use version or building the application from source.
+
+### Option 1: Quick Start (Recommended)
+1. Go to the [Releases](https://github.com/karumommik/TaskbarAudioSwitcher/releases) page.
+2. Download the latest `TaskbarAudioSwitcher.exe` file.
+3. Move the `.exe` to a permanent folder on your computer (e.g. `C:\Program Files\TaskbarAudioSwitcher` or a dedicated folder in your User directory).
+4. Double-click the file to run the utility.
+
+### Option 2: Build from Source (Advanced)
+If you prefer to compile the code yourself:
+1. Ensure you have the **.NET 10.0 SDK** (or higher) installed on your machine.
+2. Clone the repository and double-click the `build.bat` file in the project folder.
+3. The script will run a self-contained publish command, and the optimized executable `TaskbarAudioSwitcher.exe` will be generated in the `build/` directory.
+
+---
+
+### Additional Configuration
+* **Auto-start with Windows:** Right-click the blue speaker icon in the system tray and select **"Run at Windows Startup"**. This registers the application to start automatically on boot. Make sure to place the `.exe` in its permanent location before enabling this.
+* **Exit:** Right-click the system tray icon and select **"Exit"**.
