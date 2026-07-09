@@ -110,6 +110,13 @@ jobs:
           Write-Host "Packaging Complete!"
           Get-ChildItem dist | Select-Object Name, Length | Format-Table -AutoSize
 
+      - name: Upload MSIX Bundle to Actions Artifacts (Private)
+        uses: actions/upload-artifact@v4
+        with:
+          name: TaskbarAudioSwitcher-MSIXBundle
+          path: dist/*.msixbundle
+          if-no-files-found: error
+
       - name: Write release notes
         shell: bash
         env:
@@ -120,7 +127,6 @@ jobs:
 
           This is a modern, modular release compiled under **.NET 10.0**.
 
-          * **Microsoft Store Package (.msixbundle):** Installs the utility natively. Windows automatically selects the correct architecture (`x64` or `ARM64`).
           * **Self-Contained & Zero Dependencies:** Standalone zip archives are available for portable usage.
 
           ---
@@ -144,4 +150,4 @@ jobs:
           gh release create "$TAG" \
             --title "$TAG" \
             --notes-file notes.md \
-            dist/*.zip dist/*.sha256 dist/*.msixbundle
+            dist/*.zip dist/*.sha256
