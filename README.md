@@ -1,25 +1,93 @@
-# Taskbar Audio Switcher (Quick Audio Output and Volume Selection on the Taskbar)
+# Taskbar Audio Switcher (v3.3.2)
 
-This is an extremely lightweight, stable, and convenient Windows 11 utility that automatically places itself on the taskbar (next to the system clock and system tray icons), allowing you to control all computer audio quickly and comfortably.
+An extremely lightweight, stable, and convenient Windows 11 utility that automatically places itself on the taskbar (next to the system clock and system tray icons), allowing you to control all computer audio outputs, inputs, and application volumes quickly and comfortably.
 
 ### Preview
 ![Taskbar Widget](TAS1.png)  
 ![Expanded Mixer Panel](TAS2.png)
 
+---
+
 ## Key Features
-1. **Dynamic Audio Device Switching:** Easily cycle between audio outputs (e.g. Speakers, Headphones, HDMI) directly from your taskbar. Active icons display custom 3-letter nicknames or system abbreviations underneath. There is no hardcoded device limit – display as many outputs as you want!
-2. **Dynamic Discovery & Filtering:** By default, the utility automatically discovers and displays all active/enabled Windows audio devices (e.g. newly connected Bluetooth headphones appear instantly). You can toggle a filter in settings to display only a manually checked checklist of outputs.
-3. **Volume Regulation & Step Customization:** Drag the slider or scroll your mouse wheel anywhere over the utility bar to adjust the master volume. Customize your preferred scroll step size in settings (choose between 1%, 2%, 5%, or 10%).
-4. **App Volume Mixer:** Expand a dynamic, lightweight application volume mixer right above the taskbar. Its height automatically scales dynamically based on the monitor screen boundaries.
-   - **Individual App Mouse-Wheel Control:** Scroll directly over a specific row to adjust only that application's volume, without changing the master volume.
-   - **Hide Silent Apps:** Hide inactive/silent background audio sessions with a single checkbox to keep the mixer panel compact and clean.
-5. **Quick Monitor Switcher Button:** An optional on-bar button (toggled via settings) shifts the utility across screens. Left-click moves the utility to the next monitor to the right (placed on its left edge). Right-click moves it to the next monitor to the left (placed on its right edge). The alignment and monitor selection are saved instantly and persist across reboots.
-6. **High-DPI Per-Monitor Awareness:** Built-in dynamic DPI scale tracking. The entire widget (buttons, sliders, separators, custom fonts) automatically redraws and resizes on the fly to remain razor-sharp on screens with different scaling factors (e.g. 100%, 125%, 150%, 200%).
-7. **Configuration View:** Accessible via the system tray icon, allowing you to:
-   - Toggle manual device filtering and assign custom 3-letter nicknames for each device.
-   - Align the widget next to the clock (Right) or next to the Start button (Left).
-   - Toggle "Always on Top" and "Move to second screen on game launch" (processes stay locked to the second screen until exit).
-   - Toggle the monitor switch button visibility and configure scroll step sizes.
+
+1. **Dynamic Audio Device Switching:** Easily cycle between audio outputs (e.g., Speakers, Headphones, HDMI) directly from your taskbar. Active icons display custom 3-letter nicknames or system abbreviations underneath. Supports unlimited output devices.
+2. **Microphone Control:** Dedicated microphone button supporting system-wide mute toggle with visual indicators, input device context-menu switching, and active recording monitoring (highlights red when any application is actively using the microphone).
+3. **Volume Regulation & Step Customization:** Drag the master slider or scroll your mouse wheel anywhere over the utility bar to adjust the volume. Customize scroll step sizes (1%, 2%, 5%, or 10%).
+4. **App Volume Mixer:** Expand a dynamic, lightweight application volume mixer right above the taskbar. Includes mouse-wheel volume routing for individual apps and an option to hide silent background audio sessions.
+5. **Quick Monitor Switcher Button:** Shift the utility across screens. Left-click moves the widget to the next monitor to the right; right-click moves it to the next monitor to the left.
+6. **High-DPI Per-Monitor Awareness:** Scales dynamically to look razor-sharp on high-resolution monitors (e.g., 100%, 125%, 150%, 200% scaling factors).
+7. **System Tray Integration:** A flat, themed context menu (supporting Dark/Light mode) allows adjusting manual device filters, nicknames, startup settings, and alignments.
+
+---
+
+## Installation & Quick Start
+
+### Option 1: Quick Start (Recommended)
+1. Go to the [Releases](https://github.com/karumommik/TaskbarAudioSwitcher/releases) page.
+2. Download the latest `TaskbarAudioSwitcher-win-x64.zip` (or `win-arm64` if on an ARM device).
+3. Extract the `TaskbarAudioSwitcher.exe` executable to a permanent folder on your computer (e.g., `C:\Program Files\TaskbarAudioSwitcher` or a dedicated folder in your User directory).
+4. Double-click the file to run the utility.
+5. **Auto-start with Windows:** Right-click the speaker/microphone icon in the system tray and select **"Run at Windows Startup"**.
+
+### Option 2: Microsoft Store Installation
+1. Search for **Taskbar Audio Switcher** in the Microsoft Store (or use the Store deep link once published).
+2. Install the application natively. Windows Store will handle automatic updates.
+
+---
+
+## Known Behaviors & Quirks
+
+To ensure 24/7 stability and prevent being flagged by antivirus software, this utility runs as a lightweight, borderless Win32 overlay window rather than hooking deep into the Windows Explorer (`explorer.exe`) process memory. As a result, you might notice:
+* **Brief Vanishing/Reappearing:** When minimizing windows, pressing `Win+D` (Show Desktop), opening the Start Menu, or clicking taskbar flyouts, the utility may briefly disappear for a fraction of a second. The utility automatically detects this and repositions itself back into place within 500ms.
+* **Focus Safety:** Clicking the utility or adjusting volumes does not steal focus from your active windows or games, meaning you won't be accidentally tabbed out of fullscreen applications.
+
+---
+
+## Technical Architecture
+
+* **Language/Platform:** C# 10.0 / .NET 10.0 Windows Forms (WinForms).
+* **Zero Designer Files:** Built entirely programmatically. No `.Designer.cs` code generation or layout editor. All controls and margins are constructed on the fly to maximize stability.
+* **Low-Overhead COM Interop:** Interacts with core Windows audio APIs via native CoreAudio (WASAPI) and `IPolicyConfig` COM wrappers.
+* **Microphone Safety Timer:** Active microphone recording checks run on a background thread at a low frequency (once every 1 second) to maintain 0% CPU overhead under normal operation. Active monitoring can be toggled off in settings to reduce CPU cost to zero.
+* **High-DPI Scaling:** All layouts, borders, margins, fonts, and controls dynamically adjust by querying Windows API DPI scaling factors per monitor.
+
+---
+
+## How to Build & Run Locally
+
+### Prerequisites
+* .NET 10.0 SDK or higher.
+
+### Running from Source
+1. Open PowerShell in the project directory.
+2. Run the application:
+   ```bash
+   dotnet run
+   ```
+
+### Publishing Standalone Portable Builds
+To compile a single-file, self-contained executable with zero external dependencies (no .NET runtime installation required by the user):
+```bash
+dotnet publish TaskbarAudioSwitcher.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:PublishReadyToRun=true -o "./publish"
+```
+Or simply double-click the `build.bat` file in the project folder.
+
+---
+
+## CI/CD Release Pipeline & Deployment
+
+Releases are fully automated via the **GitHub Actions workflow** (`.github/workflows/release.yml`).
+To publish a new release:
+1. Increment the version inside `TaskbarAudioSwitcher.csproj` (e.g., `<Version>3.3.2</Version>`).
+2. Document the release in `README.md` under the "Release History & Changelog" section.
+3. Create and push a git tag matching `v*` (e.g. `v3.3.2`):
+   ```bash
+   git tag v3.3.2
+   git push origin v3.3.2
+   ```
+4. The GitHub Action runner will automatically compile `win-x64` and `win-arm64` ZIP packages, generate `.sha256` integrity files, build the Microsoft Store `.msixbundle`, write release notes, and create the official GitHub release.
+
+---
 
 ## Release History & Changelog
 
@@ -62,7 +130,7 @@ This patch release resolves layout positioning and performance stutters.
 
 ### v3.0.0
 This major release modernizes the application's framework and architecture, transforming it from a legacy .NET 4.0 monolith to a modular .NET 10.0 project with standalone build support.
-* **Modern .NET 10.0 Migration:** Replaced the obsolete .NET Framework 4.0 target. The application now runs on CoreCLR, benefiting from modern runtime speed, optimized Garbage Collection (GC) to minimize taustal/background CPU ticks, and native COM interop performance.
+* **Modern .NET 10.0 Migration:** Replaced the obsolete .NET Framework 4.0 target. The application now runs on CoreCLR, benefiting from modern runtime speed, optimized Garbage Collection (GC) to minimize background CPU ticks, and native COM interop performance.
 
 ### v2.0.0
 This major release modernizes the application's framework and architecture, transforming it from a legacy .NET 4.0 monolith to a modular .NET 8.0 project with standalone build support.
@@ -103,38 +171,3 @@ The first baseline release of Taskbar Audio Switcher.
 * Simple App Volume Mixer using WASAPI COM interfaces.
 * Automatic Light/Dark mode theme detection.
 * Memory optimizations (explicit COM releasing and background garbage collection sweeps) keeping RAM usage under 15 MB.
-
-## Features and Design
-- **Automatic Alignment:** Dynamically detects the system clock/tray position and aligns itself on the taskbar accordingly.
-- **Automatic Theme Support:** Detects Windows Light/Dark mode and adjusts the utility and mixer colors and borders accordingly (removing distracting purple tones).
-- **Non-activating Window (WS_EX_NOACTIVATE):** Clicking on the utility does not steal focus from other active windows, making it perfect for gamers.
-- **System Tray Icon:** Runs quietly in the background. Right-clicking the system tray icon allows you to exit the utility, open settings, or enable run at Windows startup.
-
-## Known Behaviors & Quirks
-To ensure 24/7 stability and prevent being flagged by antivirus software, this utility runs as a lightweight, borderless Win32 overlay window rather than hooking deep into the Windows Shell (`explorer.exe`) memory or modifying system system files. 
-
-As a result, you might notice some specific behaviors:
-* **Brief Vanishing/Reappearing:** When minimizing windows, pressing `Win+D` (Show Desktop), opening the Start Menu, or clicking taskbar flyouts, the utility may briefly disappear for a fraction of a second. This happens because Windows resets the overlay order of taskbar windows. The utility automatically detects this and safely repositions itself back into place on the next background timer tick (within 500ms).
-* **Focus Safety:** Clicking the utility or adjusting volumes does not steal focus from your active windows or games, meaning you won't be accidentally tabbed out of your active application.
-
-## Installation and Running
-
-You can choose between downloading the precompiled, ready-to-use version or building the application from source.
-
-### Option 1: Quick Start (Recommended)
-1. Go to the [Releases](https://github.com/karumommik/TaskbarAudioSwitcher/releases) page.
-2. Download the latest `TaskbarAudioSwitcher.exe` file.
-3. Move the `.exe` to a permanent folder on your computer (e.g. `C:\Program Files\TaskbarAudioSwitcher` or a dedicated folder in your User directory).
-4. Double-click the file to run the utility.
-
-### Option 2: Build from Source (Advanced)
-If you prefer to compile the code yourself:
-1. Ensure you have the **.NET 10.0 SDK** (or higher) installed on your machine.
-2. Clone the repository and double-click the `build.bat` file in the project folder.
-3. The script will run a self-contained publish command, and the optimized executable `TaskbarAudioSwitcher.exe` will be generated in the `build/` directory.
-
----
-
-### Additional Configuration
-* **Auto-start with Windows:** Right-click the blue speaker icon in the system tray and select **"Run at Windows Startup"**. This registers the application to start automatically on boot. Make sure to place the `.exe` in its permanent location before enabling this.
-* **Exit:** Right-click the system tray icon and select **"Exit"**.
