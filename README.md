@@ -1,4 +1,4 @@
-# Taskbar Audio Switcher (v3.3.3)
+# Taskbar Audio Switcher (v3.3.4)
 
 An extremely lightweight, stable, and convenient Windows 11 utility that automatically places itself on the taskbar (next to the system clock and system tray icons), allowing you to control all computer audio outputs, inputs, and application volumes quickly and comfortably.
 
@@ -45,7 +45,12 @@ To ensure 24/7 stability and prevent being flagged by antivirus software, this u
 
 ## 4. Release History & Changelog
 
-### v3.3.3 (Current Version)
+### v3.3.4 (Current Version)
+This patch release resolves Microsoft Store package validation restrictions.
+* **Store MinVersion Alignment:** Adjusted minimum Windows target version to `10.0.19041.0` (Windows 10, version 2004) to satisfy newer Microsoft Partner Center validation rules.
+* **Manifest Diagnostics:** Integrated manifest logging steps inside the packaging workflow to print generated XML parameters.
+
+### v3.3.3
 This patch release aligns the application update behavior with Microsoft Store guidelines.
 * **Store Auto-Updates Alignment:** Added dynamic detection of the packaging environment. The built-in GitHub update checker and update alert dialogues are automatically bypassed when running inside an MSIX container, preventing confusion for Store users who receive updates natively.
 

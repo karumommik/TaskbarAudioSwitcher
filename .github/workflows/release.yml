@@ -67,7 +67,7 @@ jobs:
             $hash = (Get-FileHash "dist/$zipName" -Algorithm SHA256).Hash.ToLower()
             "$hash  $zipName" | Out-File "dist/$zipName.sha256" -Encoding ascii
             
-            # 3. Build Architecture-Specific Payload Package (.appx extension required by MakeAppx bundle)
+            # 3. Build Architecture-Specific Payload Package
             $arch = if ($rid -eq 'win-x64') { 'x64' } else { 'arm64' }
             $stageDir = "msix-staging/$rid"
             New-Item -ItemType Directory -Force $stageDir | Out-Null
@@ -87,6 +87,11 @@ jobs:
             
             $manifestContent | Out-File "$stageDir/AppxManifest.xml" -Encoding utf8
             
+            # Print manifest to build log for auditing
+            Write-Host "--- Generated AppxManifest.xml ($rid) ---"
+            Get-Content "$stageDir/AppxManifest.xml" | Write-Host
+            Write-Host "----------------------------------------"
+
             # Pack individual appx
             $appxOutput = "dist/TaskbarAudioSwitcher_${msixVersion}_${arch}.appx"
             Write-Host "Packing $appxOutput..."
