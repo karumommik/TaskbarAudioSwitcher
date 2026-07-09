@@ -36,6 +36,7 @@ namespace TaskbarAudioSwitcher.UI
         private int gcCounter = 0;
         private int themeColorsTickCounter = 0;
         private int audioStateTickCounter = 0;
+        private int micStateTickCounter = 0;
         private uint activeFullscreenProcessId = 0;
         private string? activeFullscreenScreenDeviceName = null;
         private class ProcessCacheItem
@@ -84,6 +85,7 @@ namespace TaskbarAudioSwitcher.UI
         private int separatorX = 0;
         private string[] activeDeviceIds = Array.Empty<string>();
         private string currentDefaultId = string.Empty;
+        private string lastDefaultId = string.Empty;
         private int calculatedWidth = 295;
         
         // Theme Colors
@@ -277,17 +279,7 @@ namespace TaskbarAudioSwitcher.UI
             notifyIcon = new NotifyIcon();
             try
             {
-                Bitmap bmp = new Bitmap(16, 16);
-                using (Graphics g = Graphics.FromImage(bmp))
-                {
-                    g.SmoothingMode = SmoothingMode.AntiAlias;
-                    g.FillEllipse(Brushes.DodgerBlue, 1, 1, 14, 14);
-                    using (Font font = new Font("Segoe MDL2 Assets", 8f))
-                    {
-                        g.DrawString("\uE767", font, Brushes.White, new RectangleF(-1, 2, 18, 16));
-                    }
-                }
-                notifyIcon.Icon = Icon.FromHandle(bmp.GetHicon());
+                notifyIcon.Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath);
             }
             catch
             {
@@ -480,6 +472,14 @@ namespace TaskbarAudioSwitcher.UI
                 RefreshMixerSessions();
             }
 
+            // 2.5. Throttled Microphone State Check (every 1000ms / 10 ticks of 100ms)
+            micStateTickCounter++;
+            if (micStateTickCounter >= 10)
+            {
+                micStateTickCounter = 0;
+                RefreshMicrophoneState();
+            }
+
             // 3. Fast Mixer & Position check (every tick / 100ms)
             if (isExpanded)
             {
@@ -650,10 +650,9 @@ namespace TaskbarAudioSwitcher.UI
                                   else btnMute.Glyph = "\uE767"; // Volume high
                             }
                         }
-                        RefreshMicrophoneState();
                     }
 
-                    bool changed = (newIds.Length != activeDeviceIds.Length);
+                    bool changed = (newIds.Length != activeDeviceIds.Length) || (currentDefaultId != lastDefaultId);
                     if (!changed)
                     {
                         for (int i = 0; i < newIds.Length; i++)
@@ -666,8 +665,9 @@ namespace TaskbarAudioSwitcher.UI
                         }
                     }
 
-                    if (changed || true)
+                    if (changed)
                     {
+                        lastDefaultId = currentDefaultId;
                         activeDeviceIds = newIds;
 
                         // Ensure we have enough buttons in the list

@@ -45,6 +45,11 @@ To ensure 24/7 stability and prevent being flagged by antivirus software, this u
 
 ## 4. Release History & Changelog
 
+### v3.3.6
+This patch release brings critical performance optimizations to background polling logic.
+* **Microphone Polling Optimization:** Fixed a bug where the active microphone check ran twice as fast (500ms) as designed. It now properly executes every 1000ms as per the original CPU safety architecture.
+* **UI Layout Rendering Fix:** Eliminated an unconditional UI re-render bug that caused the device list layout to rebuild every 500ms even when no state had changed, significantly reducing GC pressure and CPU usage.
+
 ### v3.3.5 (Current Version)
 This release introduces Microsoft Store packaging support (MSIX) and aligns the application with Windows Store policies, while preserving the standalone portable releases.
 * **Microsoft Store MSIX Support:** Integrated package manifest and asset requirements. The build pipeline now outputs a single `.msixbundle` supporting both `x64` and `ARM64` for Microsoft Store deployment.

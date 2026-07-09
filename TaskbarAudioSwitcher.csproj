@@ -12,9 +12,10 @@
     <PublishSingleFile>true</PublishSingleFile>
     <SelfContained>true</SelfContained>
     <PublishReadyToRun>true</PublishReadyToRun>
+    <ApplicationIcon>Assets\app.ico</ApplicationIcon>
     <!-- Suppress WinForms Designer analyzer warning as controls are created programmatically -->
     <NoWarn>$(NoWarn);WFO1000</NoWarn>
-    <Version>3.3.5</Version>
+    <Version>3.3.6</Version>
     <Product>Taskbar Audio Switcher</Product>
     <Company>Erki Lippand</Company>
   </PropertyGroup>
