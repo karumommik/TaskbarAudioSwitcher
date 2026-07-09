@@ -35,6 +35,10 @@ namespace TaskbarAudioSwitcher.Native
         [DllImport("user32.dll")]
         public static extern bool IsChild(IntPtr hWndParent, IntPtr hWndChild);
 
+        [DllImport("user32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static extern bool SetForegroundWindow(IntPtr hWnd);
+
         [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Auto)]
         public static extern int GetClassName(IntPtr hWnd, StringBuilder lpClassName, int nMaxCount);
 

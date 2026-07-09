@@ -16,6 +16,8 @@ namespace TaskbarAudioSwitcher.Core
         public bool HideSilentApps = false;
         public int ScrollStep = 2;
         public bool ShowScreenMoveButton = false;
+        public bool ShowMicrophoneButton = true;
+        public bool MonitorMicrophoneState = true;
 
         private static string GetFilePath()
         {
@@ -49,6 +51,8 @@ namespace TaskbarAudioSwitcher.Core
                             else if (key == "HideSilentApps") bool.TryParse(val, out s.HideSilentApps);
                             else if (key == "ScrollStep") int.TryParse(val, out s.ScrollStep);
                             else if (key == "ShowScreenMoveButton") bool.TryParse(val, out s.ShowScreenMoveButton);
+                            else if (key == "ShowMicrophoneButton") bool.TryParse(val, out s.ShowMicrophoneButton);
+                            else if (key == "MonitorMicrophoneState") bool.TryParse(val, out s.MonitorMicrophoneState);
                         }
                     }
                 }
@@ -73,7 +77,9 @@ namespace TaskbarAudioSwitcher.Core
                     "DeviceNicknames=" + DeviceNicknames,
                     "HideSilentApps=" + HideSilentApps,
                     "ScrollStep=" + ScrollStep,
-                    "ShowScreenMoveButton=" + ShowScreenMoveButton
+                    "ShowScreenMoveButton=" + ShowScreenMoveButton,
+                    "ShowMicrophoneButton=" + ShowMicrophoneButton,
+                    "MonitorMicrophoneState=" + MonitorMicrophoneState
                 };
                 System.IO.File.WriteAllLines(GetFilePath(), lines.ToArray());
             }

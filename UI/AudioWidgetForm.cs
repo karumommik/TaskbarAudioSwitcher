@@ -25,6 +25,7 @@ namespace TaskbarAudioSwitcher.UI
         private System.Windows.Forms.Timer updateTimer = null!;
         private ToolTip toolTip = null!;
         private NotifyIcon notifyIcon = null!;
+        private MicrophoneButton? btnMicrophone;
 
         // Mixer panel variables
         private bool isExpanded = false;
@@ -295,6 +296,7 @@ namespace TaskbarAudioSwitcher.UI
 
             // Context Menu
             ContextMenuStrip contextMenu = new ContextMenuStrip();
+            contextMenu.Renderer = new ModernToolStripRenderer(isDarkMode);
             
             ToolStripMenuItem titleItem = new ToolStripMenuItem("Taskbar Audio Switcher");
             titleItem.Enabled = false;
@@ -425,6 +427,13 @@ namespace TaskbarAudioSwitcher.UI
                 btnScreenMove.BackColor = themeBgColor;
                 btnScreenMove.ForeColor = themeTextColor;
                 btnScreenMove.HoverBgColor = themeHoverBgColor;
+            }
+            if (btnMicrophone != null)
+            {
+                btnMicrophone.BackColor = themeBgColor;
+                btnMicrophone.ForeColor = themeTextColor;
+                btnMicrophone.HoverBgColor = themeHoverBgColor;
+                btnMicrophone.ActiveBgColor = themeActiveBgColor;
             }
             if (pnlMixer != null)
             {
@@ -633,6 +642,7 @@ namespace TaskbarAudioSwitcher.UI
                                   else btnMute.Glyph = "\uE767"; // Volume high
                             }
                         }
+                        RefreshMicrophoneState();
                     }
 
                     bool changed = (newIds.Length != activeDeviceIds.Length);
@@ -740,6 +750,36 @@ namespace TaskbarAudioSwitcher.UI
             int baseY = this.Height - collapsedH;
             int currentX = padding;
             int visibleCount = 0;
+
+            if (settings.ShowMicrophoneButton)
+            {
+                if (btnMicrophone == null)
+                {
+                    btnMicrophone = new MicrophoneButton
+                    {
+                        ForeColor = themeTextColor,
+                        HoverBgColor = themeHoverBgColor,
+                        ActiveBgColor = Color.Transparent,
+                        Visible = true
+                    };
+                    btnMicrophone.MouseDown += BtnMicrophone_MouseDown;
+                    btnMicrophone.MouseWheel += Form_MouseWheel;
+                    toolTip.SetToolTip(btnMicrophone, "Mikrofon (Vasak klikk: Mute, Parem klikk: Seade, Rullik: Tugevus)");
+                    this.Controls.Add(btnMicrophone);
+                    UpdateThemeColors();
+                }
+                btnMicrophone.Visible = true;
+                btnMicrophone.Size = new Size(btnSize, btnSize);
+                btnMicrophone.Location = new Point(currentX, baseY + margin);
+                currentX += btnSize + margin;
+            }
+            else
+            {
+                if (btnMicrophone != null)
+                {
+                    btnMicrophone.Visible = false;
+                }
+            }
 
             foreach (var btn in btnDevices)
             {
@@ -1117,6 +1157,13 @@ namespace TaskbarAudioSwitcher.UI
             if (hme != null && hme.Handled) return;
 
             Control? senderControl = sender as Control;
+
+            if (senderControl == btnMicrophone)
+            {
+                AdjustMicrophoneVolume(e.Delta);
+                if (hme != null) hme.Handled = true;
+                return;
+            }
 
             PinnedAppControls? matchedPinned = null;
             if (senderControl != null && pinnedControlsList != null)
@@ -2064,6 +2111,354 @@ namespace TaskbarAudioSwitcher.UI
             {
                 try { Marshal.ReleaseComObject(obj); } catch { }
             }
+        }
+
+        private void BtnMicrophone_MouseDown(object? sender, MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Left)
+            {
+                ToggleMicrophoneMute();
+            }
+            else if (e.Button == MouseButtons.Right)
+            {
+                if (btnMicrophone != null)
+                {
+                    ShowMicrophoneContextMenu(btnMicrophone, new Point(e.X, e.Y));
+                }
+            }
+        }
+
+        private void RefreshMicrophoneState()
+        {
+            if (btnMicrophone == null) return;
+
+            IMMDevice? defaultMicDev = null;
+            IAudioEndpointVolume? volumeControl = null;
+            object? volObj = null;
+
+            try
+            {
+                int hr = enumerator.GetDefaultAudioEndpoint(1, 0, out defaultMicDev); // 1 = eCapture
+                if (hr == 0 && defaultMicDev != null)
+                {
+                    Guid iid = new Guid("5CDF2C82-841E-4546-9722-0CF74078229A"); // IID_IAudioEndpointVolume
+                    hr = defaultMicDev.Activate(ref iid, 1, IntPtr.Zero, out volObj);
+                    volumeControl = volObj as IAudioEndpointVolume;
+
+                    if (hr == 0 && volumeControl != null)
+                    {
+                        bool isMuted;
+                        volumeControl.GetMute(out isMuted);
+                        
+                        float volumeLevel;
+                        volumeControl.GetMasterVolumeLevelScalar(out volumeLevel);
+
+                        btnMicrophone.IsMuted = isMuted;
+                        btnMicrophone.VolumePercent = (int)Math.Round(volumeLevel * 100);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                try { System.IO.File.AppendAllText(System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "miclog.txt"), "RefreshMicState Error: " + ex.Message + "\n"); } catch {}
+            }
+            finally
+            {
+                SafeRelease(volObj);
+                SafeRelease(volumeControl);
+                SafeRelease(defaultMicDev);
+            }
+            
+            if (settings.MonitorMicrophoneState)
+            {
+                CheckMicrophoneActiveUsage();
+            }
+            else
+            {
+                btnMicrophone.IsInUse = false;
+            }
+        }
+
+        private void ToggleMicrophoneMute()
+        {
+            IMMDevice? defaultMicDev = null;
+            IAudioEndpointVolume? volumeControl = null;
+            object? volObj = null;
+
+            try
+            {
+                int hr = enumerator.GetDefaultAudioEndpoint(1, 0, out defaultMicDev);
+                if (hr == 0 && defaultMicDev != null)
+                {
+                    Guid iid = new Guid("5CDF2C82-841E-4546-9722-0CF74078229A");
+                    hr = defaultMicDev.Activate(ref iid, 1, IntPtr.Zero, out volObj);
+                    volumeControl = volObj as IAudioEndpointVolume;
+
+                    if (hr == 0 && volumeControl != null)
+                    {
+                        bool isMuted;
+                        volumeControl.GetMute(out isMuted);
+                        
+                        Guid guid = Guid.Empty;
+                        volumeControl.SetMute(!isMuted, ref guid);
+                        
+                        if (btnMicrophone != null) btnMicrophone.IsMuted = !isMuted;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                try { System.IO.File.AppendAllText(System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "miclog.txt"), "ToggleMicMute Error: " + ex.Message + "\n"); } catch {}
+            }
+            finally
+            {
+                SafeRelease(volObj);
+                SafeRelease(volumeControl);
+                SafeRelease(defaultMicDev);
+            }
+        }
+
+        private void AdjustMicrophoneVolume(int delta)
+        {
+            IMMDevice? defaultMicDev = null;
+            IAudioEndpointVolume? volumeControl = null;
+            object? volObj = null;
+
+            try
+            {
+                int hr = enumerator.GetDefaultAudioEndpoint(1, 0, out defaultMicDev);
+                if (hr == 0 && defaultMicDev != null)
+                {
+                    Guid iid = new Guid("5CDF2C82-841E-4546-9722-0CF74078229A");
+                    hr = defaultMicDev.Activate(ref iid, 1, IntPtr.Zero, out volObj);
+                    volumeControl = volObj as IAudioEndpointVolume;
+
+                    if (hr == 0 && volumeControl != null)
+                    {
+                        float currentVolume;
+                        volumeControl.GetMasterVolumeLevelScalar(out currentVolume);
+
+                        float step = (settings.ScrollStep / 100f);
+                        float newVolume = currentVolume + (delta > 0 ? step : -step);
+                        newVolume = Math.Max(0.0f, Math.Min(1.0f, newVolume));
+
+                        Guid guid = Guid.Empty;
+                        volumeControl.SetMasterVolumeLevelScalar(newVolume, ref guid);
+
+                        if (btnMicrophone != null)
+                        {
+                            btnMicrophone.VolumePercent = (int)Math.Round(newVolume * 100);
+                            toolTip.Show("Mikrofon: " + btnMicrophone.VolumePercent + "%", btnMicrophone, 1000);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                try { System.IO.File.AppendAllText(System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "miclog.txt"), "AdjustMicVol Error: " + ex.Message + "\n"); } catch {}
+            }
+            finally
+            {
+                SafeRelease(volObj);
+                SafeRelease(volumeControl);
+                SafeRelease(defaultMicDev);
+            }
+        }
+
+        private void CheckMicrophoneActiveUsage()
+        {
+            if (btnMicrophone == null) return;
+
+            IMMDevice? defaultMicDev = null;
+            IAudioSessionManager2? manager = null;
+            IAudioSessionEnumerator? sessionEnum = null;
+            object? volObj = null;
+            bool active = false;
+
+            try
+            {
+                int hr = enumerator.GetDefaultAudioEndpoint(1, 0, out defaultMicDev);
+                if (hr == 0 && defaultMicDev != null)
+                {
+                    Guid iid = new Guid("77AA99A0-1BD6-484F-8BC7-2C654C9A9B6F"); // IID_IAudioSessionManager2
+                    hr = defaultMicDev.Activate(ref iid, 1, IntPtr.Zero, out volObj);
+                    manager = volObj as IAudioSessionManager2;
+
+                    if (hr == 0 && manager != null && manager.GetSessionEnumerator(out sessionEnum) == 0 && sessionEnum != null)
+                    {
+                        int count = 0;
+                        if (sessionEnum.GetCount(out count) == 0)
+                        {
+                            for (int i = 0; i < count; i++)
+                            {
+                                IAudioSessionControl? sessionCtrl = null;
+                                try
+                                {
+                                    if (sessionEnum.GetSession(i, out sessionCtrl) == 0 && sessionCtrl != null)
+                                    {
+                                        int state = 0;
+                                        sessionCtrl.GetState(out state);
+                                        if (state == 1) // AudioSessionStateActive
+                                        {
+                                            active = true;
+                                            SafeRelease(sessionCtrl);
+                                            break;
+                                        }
+                                        SafeRelease(sessionCtrl);
+                                    }
+                                }
+                                catch
+                                {
+                                    SafeRelease(sessionCtrl);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                try { System.IO.File.AppendAllText(System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "miclog.txt"), "CheckMicUsage Error: " + ex.Message + "\n"); } catch {}
+            }
+            finally
+            {
+                SafeRelease(sessionEnum);
+                SafeRelease(manager);
+                SafeRelease(volObj);
+                SafeRelease(defaultMicDev);
+            }
+
+            btnMicrophone.IsInUse = active;
+        }
+
+        private void ShowMicrophoneContextMenu(Control control, Point pos)
+        {
+            var menu = new ContextMenuStrip();
+            menu.Renderer = new ModernToolStripRenderer(isDarkMode);
+
+            IMMDeviceCollection? devices = null;
+            IMMDeviceEnumerator? localEnumerator = null;
+            
+            try
+            {
+                Type? type = Type.GetTypeFromCLSID(new Guid("BCDE0395-E52F-467C-8E3D-C4579291692E"));
+                if (type != null)
+                {
+                    localEnumerator = Activator.CreateInstance(type) as IMMDeviceEnumerator;
+                }
+
+                if (localEnumerator != null)
+                {
+                    int hr = localEnumerator.EnumAudioEndpoints(1, 1, out devices); // 1 = eCapture, 1 = DEVICE_STATE_ACTIVE
+                    if (hr == 0 && devices != null)
+                    {
+                        uint count = 0;
+                        devices.GetCount(out count);
+
+                        IMMDevice? defaultMic = null;
+                        string defaultMicId = string.Empty;
+                        if (localEnumerator.GetDefaultAudioEndpoint(1, 0, out defaultMic) == 0 && defaultMic != null)
+                        {
+                            defaultMic.GetId(out defaultMicId);
+                            SafeRelease(defaultMic);
+                        }
+
+                        for (uint i = 0; i < count; i++)
+                        {
+                            IMMDevice? dev = null;
+                            if (devices.Item(i, out dev) == 0 && dev != null)
+                            {
+                                string devId;
+                                dev.GetId(out devId);
+
+                                string friendlyName = GetDeviceFriendlyName(dev);
+
+                                var item = new ToolStripMenuItem(friendlyName);
+                                item.Checked = (devId == defaultMicId);
+                                string capturedId = devId;
+                                item.Click += (s, ev) =>
+                                {
+                                    SetDefaultInputDevice(capturedId);
+                                    RefreshMicrophoneState();
+                                };
+                                menu.Items.Add(item);
+                                SafeRelease(dev);
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                try { System.IO.File.AppendAllText(System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "miclog.txt"), "Menu Error: " + ex.Message + "\n"); } catch {}
+            }
+            finally
+            {
+                SafeRelease(devices);
+                SafeRelease(localEnumerator);
+            }
+
+            if (menu.Items.Count == 0)
+            {
+                menu.Items.Add(new ToolStripMenuItem("Mikrofone ei leitud") { Enabled = false });
+            }
+
+            menu.Show(control, pos);
+            Win32.SetForegroundWindow(menu.Handle);
+        }
+
+        private void SetDefaultInputDevice(string id)
+        {
+            IPolicyConfig? policyConfigInstance = null;
+            try
+            {
+                Type? type = Type.GetTypeFromCLSID(new Guid("870af99c-171d-4f9e-af0d-e63df40c2bc9"));
+                if (type != null)
+                {
+                    policyConfigInstance = Activator.CreateInstance(type) as IPolicyConfig;
+                }
+                if (policyConfigInstance != null)
+                {
+                    policyConfigInstance.SetDefaultEndpoint(id, 0); // eConsole
+                    policyConfigInstance.SetDefaultEndpoint(id, 1); // eMultimedia
+                    policyConfigInstance.SetDefaultEndpoint(id, 2); // eCommunications
+                }
+            }
+            catch (Exception ex)
+            {
+                try { System.IO.File.AppendAllText(System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "miclog.txt"), "SetDefaultInput Error: " + ex.Message + "\n"); } catch {}
+            }
+            finally
+            {
+                SafeRelease(policyConfigInstance);
+            }
+        }
+
+        private string GetDeviceFriendlyName(IMMDevice dev)
+        {
+            IPropertyStore? props = null;
+            try
+            {
+                int hrProps = dev.OpenPropertyStore(0, out props);
+                if (hrProps == 0 && props != null)
+                {
+                    var key = new PROPERTYKEY(new Guid("a45c254e-df1c-4efd-8020-67d146a850e0"), 14);
+                    PROPVARIANT pv;
+                    props.GetValue(ref key, out pv);
+                    if (pv.vt == 31)
+                    {
+                        string name = Marshal.PtrToStringUni(pv.pointerVal) ?? "Tundmatu seade";
+                        ComNative.PropVariantClear(ref pv);
+                        return name;
+                    }
+                }
+            }
+            catch { }
+            finally
+            {
+                SafeRelease(props);
+            }
+            return "Tundmatu seade";
         }
 
         private bool IsProcessRunning(uint processId)

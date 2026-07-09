@@ -23,6 +23,8 @@ namespace TaskbarAudioSwitcher.UI
         private CheckBox cbAlwaysOnTop;
         private CheckBox cbMoveOnFullscreen;
         private CheckBox cbShowScreenMove;
+        private CheckBox cbShowMicrophone;
+        private CheckBox cbMonitorMicrophone;
         private ComboBox cmbScrollStep;
         private Button btnSave;
         private Button btnCancel;
@@ -47,7 +49,7 @@ namespace TaskbarAudioSwitcher.UI
 
             // Setup Window
             this.Text = "Settings - Taskbar Audio Switcher";
-            this.Size = new Size((int)(380 * scale), (int)(560 * scale));
+            this.Size = new Size((int)(380 * scale), (int)(640 * scale));
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
             this.MinimizeBox = false;
@@ -103,11 +105,35 @@ namespace TaskbarAudioSwitcher.UI
             // Populate Devices
             PopulateDevices(textColor);
 
+            // Show Microphone Checkbox
+            cbShowMicrophone = new CheckBox
+            {
+                Text = "Show microphone button on the bar",
+                Location = new Point((int)(20 * scale), (int)(215 * scale)),
+                Size = new Size((int)(325 * scale), (int)(24 * scale)),
+                Checked = settings.ShowMicrophoneButton,
+                Font = new Font("Segoe UI", 9f * scale, FontStyle.Bold),
+                FlatStyle = FlatStyle.Flat
+            };
+            this.Controls.Add(cbShowMicrophone);
+
+            // Monitor Microphone Checkbox
+            cbMonitorMicrophone = new CheckBox
+            {
+                Text = "Monitor microphone active usage (red fill)",
+                Location = new Point((int)(20 * scale), (int)(240 * scale)),
+                Size = new Size((int)(325 * scale), (int)(24 * scale)),
+                Checked = settings.MonitorMicrophoneState,
+                Font = new Font("Segoe UI", 9f * scale, FontStyle.Bold),
+                FlatStyle = FlatStyle.Flat
+            };
+            this.Controls.Add(cbMonitorMicrophone);
+
             // Monitor Label & Dropdown
             Label lblScreen = new Label
             {
                 Text = "Display on taskbar screen:",
-                Location = new Point((int)(20 * scale), (int)(215 * scale)),
+                Location = new Point((int)(20 * scale), (int)(275 * scale)),
                 Size = new Size((int)(325 * scale), (int)(20 * scale)),
                 Font = new Font("Segoe UI", 9f * scale, FontStyle.Bold)
             };
@@ -115,7 +141,7 @@ namespace TaskbarAudioSwitcher.UI
 
             cmbScreen = new ComboBox
             {
-                Location = new Point((int)(20 * scale), (int)(235 * scale)),
+                Location = new Point((int)(20 * scale), (int)(295 * scale)),
                 Size = new Size((int)(325 * scale), (int)(24 * scale)),
                 DropDownStyle = ComboBoxStyle.DropDownList,
                 BackColor = controlBg,
@@ -146,7 +172,7 @@ namespace TaskbarAudioSwitcher.UI
             Label lblAlignment = new Label
             {
                 Text = "Taskbar alignment:",
-                Location = new Point((int)(20 * scale), (int)(275 * scale)),
+                Location = new Point((int)(20 * scale), (int)(335 * scale)),
                 Size = new Size((int)(325 * scale), (int)(20 * scale)),
                 Font = new Font("Segoe UI", 9f * scale, FontStyle.Bold)
             };
@@ -154,7 +180,7 @@ namespace TaskbarAudioSwitcher.UI
 
             cmbAlignment = new ComboBox
             {
-                Location = new Point((int)(20 * scale), (int)(295 * scale)),
+                Location = new Point((int)(20 * scale), (int)(355 * scale)),
                 Size = new Size((int)(325 * scale), (int)(24 * scale)),
                 DropDownStyle = ComboBoxStyle.DropDownList,
                 BackColor = controlBg,
@@ -175,7 +201,7 @@ namespace TaskbarAudioSwitcher.UI
             cbAlwaysOnTop = new CheckBox
             {
                 Text = "Always on Top (even over fullscreen)",
-                Location = new Point((int)(20 * scale), (int)(320 * scale)),
+                Location = new Point((int)(20 * scale), (int)(395 * scale)),
                 Size = new Size((int)(325 * scale), (int)(24 * scale)),
                 Checked = settings.AlwaysOnTop,
                 Font = new Font("Segoe UI", 9f * scale, FontStyle.Bold),
@@ -187,7 +213,7 @@ namespace TaskbarAudioSwitcher.UI
             cbMoveOnFullscreen = new CheckBox
             {
                 Text = "Move to second screen on game launch",
-                Location = new Point((int)(20 * scale), (int)(345 * scale)),
+                Location = new Point((int)(20 * scale), (int)(420 * scale)),
                 Size = new Size((int)(325 * scale), (int)(24 * scale)),
                 Checked = settings.MoveOnFullscreen,
                 Font = new Font("Segoe UI", 9f * scale, FontStyle.Bold),
@@ -199,7 +225,7 @@ namespace TaskbarAudioSwitcher.UI
             cbShowScreenMove = new CheckBox
             {
                 Text = "Show monitor switch button on the bar",
-                Location = new Point((int)(20 * scale), (int)(370 * scale)),
+                Location = new Point((int)(20 * scale), (int)(445 * scale)),
                 Size = new Size((int)(325 * scale), (int)(24 * scale)),
                 Checked = settings.ShowScreenMoveButton,
                 Font = new Font("Segoe UI", 9f * scale, FontStyle.Bold),
@@ -211,7 +237,7 @@ namespace TaskbarAudioSwitcher.UI
             Label lblScreenMoveDesc = new Label
             {
                 Text = "Left-click: Move to next monitor on the right (docked to left edge).\r\nRight-click: Move to next monitor on the left (docked to right edge).",
-                Location = new Point((int)(40 * scale), (int)(394 * scale)),
+                Location = new Point((int)(40 * scale), (int)(469 * scale)),
                 Size = new Size((int)(305 * scale), (int)(30 * scale)),
                 Font = new Font("Segoe UI", 7.5f * scale, FontStyle.Regular),
                 ForeColor = isDarkMode ? Color.FromArgb(170, 170, 170) : Color.FromArgb(100, 100, 100)
@@ -222,7 +248,7 @@ namespace TaskbarAudioSwitcher.UI
             Label lblScrollStep = new Label
             {
                 Text = "Scroll volume step:",
-                Location = new Point((int)(20 * scale), (int)(432 * scale)),
+                Location = new Point((int)(20 * scale), (int)(512 * scale)),
                 Size = new Size((int)(170 * scale), (int)(20 * scale)),
                 Font = new Font("Segoe UI", 9f * scale, FontStyle.Bold)
             };
@@ -230,7 +256,7 @@ namespace TaskbarAudioSwitcher.UI
 
             cmbScrollStep = new ComboBox
             {
-                Location = new Point((int)(200 * scale), (int)(430 * scale)),
+                Location = new Point((int)(200 * scale), (int)(510 * scale)),
                 Size = new Size((int)(145 * scale), (int)(24 * scale)),
                 DropDownStyle = ComboBoxStyle.DropDownList,
                 BackColor = controlBg,
@@ -253,7 +279,7 @@ namespace TaskbarAudioSwitcher.UI
             btnSave = new Button
             {
                 Text = "Save",
-                Location = new Point((int)(155 * scale), (int)(475 * scale)),
+                Location = new Point((int)(155 * scale), (int)(555 * scale)),
                 Size = new Size((int)(90 * scale), (int)(30 * scale)),
                 BackColor = Color.FromArgb(0, 120, 215),
                 ForeColor = Color.White,
@@ -268,7 +294,7 @@ namespace TaskbarAudioSwitcher.UI
             btnCancel = new Button
             {
                 Text = "Cancel",
-                Location = new Point((int)(255 * scale), (int)(475 * scale)),
+                Location = new Point((int)(255 * scale), (int)(555 * scale)),
                 Size = new Size((int)(90 * scale), (int)(30 * scale)),
                 BackColor = btnBg,
                 ForeColor = textColor,
@@ -278,6 +304,29 @@ namespace TaskbarAudioSwitcher.UI
             btnCancel.FlatAppearance.BorderSize = 0;
             btnCancel.Click += (s, e) => { this.DialogResult = DialogResult.Cancel; this.Close(); };
             this.Controls.Add(btnCancel);
+
+            // Setup ToolTips
+            ToolTip toolTip = new ToolTip
+            {
+                AutoPopDelay = 8000,
+                InitialDelay = 500,
+                ReshowDelay = 200,
+                ShowAlways = true
+            };
+
+            toolTip.SetToolTip(cbFilterDevices, "If enabled, only the checked audio devices in the list below will be displayed on the bar.");
+            toolTip.SetToolTip(lblDevices, "Check the audio output devices you want to show on the bar. Unchecked devices will be hidden.");
+            toolTip.SetToolTip(cbShowMicrophone, "Displays a microphone icon on the bar.\nLeft-click: System-wide mute toggle (Mute/Unmute)\nRight-click: Input device selection (default input)\nMouse scroll: Adjust microphone volume");
+            toolTip.SetToolTip(cbMonitorMicrophone, "Monitors microphone usage in the background (1s interval). If any app (e.g. Discord) is actively using the microphone, the icon fills with red.");
+            toolTip.SetToolTip(lblScreen, "Select which screen's taskbar the utility bar is docked to.");
+            toolTip.SetToolTip(cmbScreen, "Select which screen's taskbar the utility bar is docked to.");
+            toolTip.SetToolTip(lblAlignment, "Left alignment places the bar next to the Start button. Right alignment places it next to the clock.");
+            toolTip.SetToolTip(cmbAlignment, "Left alignment places the bar next to the Start button. Right alignment places it next to the clock.");
+            toolTip.SetToolTip(cbAlwaysOnTop, "Keeps the utility bar always on top of other windows, even during fullscreen games.");
+            toolTip.SetToolTip(cbMoveOnFullscreen, "Automatically moves the utility bar to the secondary monitor when a fullscreen game or app launches on the primary monitor.");
+            toolTip.SetToolTip(cbShowScreenMove, "Displays a monitor switch icon on the bar.\nLeft-click: Move utility to the next screen on the right\nRight-click: Move utility to the next screen on the left");
+            toolTip.SetToolTip(lblScrollStep, "The volume percentage step when scrolling over icons with the mouse wheel.");
+            toolTip.SetToolTip(cmbScrollStep, "The volume percentage step when scrolling over icons with the mouse wheel.");
         }
 
         private void PopulateDevices(Color textColor)
@@ -389,6 +438,8 @@ namespace TaskbarAudioSwitcher.UI
             settings.AlwaysOnTop = cbAlwaysOnTop.Checked;
             settings.MoveOnFullscreen = cbMoveOnFullscreen.Checked;
             settings.ShowScreenMoveButton = cbShowScreenMove.Checked;
+            settings.ShowMicrophoneButton = cbShowMicrophone.Checked;
+            settings.MonitorMicrophoneState = cbMonitorMicrophone.Checked;
 
             if (cmbScrollStep.SelectedIndex == 0) settings.ScrollStep = 1;
             else if (cmbScrollStep.SelectedIndex == 2) settings.ScrollStep = 5;
