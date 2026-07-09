@@ -82,7 +82,7 @@ jobs:
             
             # Prepare appxmanifest for this architecture and version
             $manifestContent = Get-Content "Package.appxmanifest" -Raw
-            $manifestContent = $manifestContent -replace 'Version="[^"]+"', ('Version="' + $msixVersion + '"')
+            $manifestContent = $manifestContent -replace 'Identity\s+([^>]+)Version="[^"]+"', ('Identity $1Version="' + $msixVersion + '"')
             $manifestContent = $manifestContent -replace 'ProcessorArchitecture="[^"]+"', ('ProcessorArchitecture="' + $arch + '"')
             
             $manifestContent | Out-File "$stageDir/AppxManifest.xml" -Encoding utf8
