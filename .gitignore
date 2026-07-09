@@ -9,3 +9,6 @@ build/
 
 # Local settings
 settings.txt
+
+# Local rules
+.gemini-rules
