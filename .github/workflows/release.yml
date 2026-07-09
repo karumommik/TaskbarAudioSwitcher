@@ -67,7 +67,7 @@ jobs:
             $hash = (Get-FileHash "dist/$zipName" -Algorithm SHA256).Hash.ToLower()
             "$hash  $zipName" | Out-File "dist/$zipName.sha256" -Encoding ascii
             
-            # 3. Build Architecture-Specific MSIX
+            # 3. Build Architecture-Specific Payload Package (.appx extension required by MakeAppx bundle)
             $arch = if ($rid -eq 'win-x64') { 'x64' } else { 'arm64' }
             $stageDir = "msix-staging/$rid"
             New-Item -ItemType Directory -Force $stageDir | Out-Null
@@ -87,10 +87,10 @@ jobs:
             
             $manifestContent | Out-File "$stageDir/AppxManifest.xml" -Encoding utf8
             
-            # Pack individual MSIX
-            $msixOutput = "dist/TaskbarAudioSwitcher_${msixVersion}_${arch}.msix"
-            Write-Host "Packing $msixOutput..."
-            & $makeAppx pack /d $stageDir /p $msixOutput /o
+            # Pack individual appx
+            $appxOutput = "dist/TaskbarAudioSwitcher_${msixVersion}_${arch}.appx"
+            Write-Host "Packing $appxOutput..."
+            & $makeAppx pack /d $stageDir /p $appxOutput /o
             if ($LASTEXITCODE -ne 0) { throw "MakeAppx pack failed for $rid" }
           }
           
@@ -99,8 +99,8 @@ jobs:
           $bundleStaging = "msix-bundle-staging"
           New-Item -ItemType Directory -Force $bundleStaging | Out-Null
           
-          # Copy only msix files to the bundle staging folder
-          Copy-Item "dist/*.msix" $bundleStaging/
+          # Copy only appx files to the bundle staging folder
+          Copy-Item "dist/*.appx" $bundleStaging/
           
           # Build bundle
           $bundleOutput = "dist/TaskbarAudioSwitcher_${msixVersion}_bundle.msixbundle"
