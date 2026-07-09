@@ -23,7 +23,12 @@ This is an extremely lightweight, stable, and convenient Windows 11 utility that
 
 ## Release History & Changelog
 
-### v3.3.1 (Current Version)
+### v3.3.2 (Current Version)
+This patch release adds MSIX packaging assets and workflows for Microsoft Store publication, while keeping the standalone portable builds.
+* **Microsoft Store MSIX Support:** Integrated package manifest and asset requirements. The build pipeline now outputs a single `.msixbundle` supporting both `x64` and `ARM64` for Microsoft Store deployment.
+* **Portable Builds Preserved:** The standalone portable `.zip` releases continue to be built and published identically to previous versions.
+
+### v3.3.1
 This patch release resolves a system tray context menu lockup conflict.
 * **Tray Menu Focus Lockup Fix:** Added a 100ms asynchronous delay (`await Task.Delay(100)`) and explicit disposal wrapper when launching `SettingsForm` from the tray context menu, ensuring the context menu completely closes and releases its Win32 mouse capture/focus before the modal dialog loop starts.
 
