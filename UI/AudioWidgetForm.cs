@@ -310,7 +310,7 @@ namespace TaskbarAudioSwitcher.UI
             startupItem.Checked = IsStartupEnabled();
             contextMenu.Items.Add(startupItem);
 
-            ToolStripMenuItem settingsItem = new ToolStripMenuItem("Settings", null, (s, e) => ShowSettings());
+            ToolStripMenuItem settingsItem = new ToolStripMenuItem("Settings", null, (s, e) => this.BeginInvoke(new Action(ShowSettings)));
             contextMenu.Items.Add(settingsItem);
 
             ToolStripMenuItem repositionItem = new ToolStripMenuItem("Reposition Now", null, (s, e) => {
@@ -330,7 +330,7 @@ namespace TaskbarAudioSwitcher.UI
             notifyIcon.DoubleClick += (s, e) => UpdatePosition();
         }
 
-        private void ShowSettings()
+        private async void ShowSettings()
         {
             foreach (Form openForm in Application.OpenForms)
             {
@@ -341,13 +341,18 @@ namespace TaskbarAudioSwitcher.UI
                 }
             }
 
-            var form = new SettingsForm(settings, enumerator, isDarkMode);
-            if (form.ShowDialog() == DialogResult.OK)
+            // Allow the tray context menu to completely close and release mouse capture/focus
+            await Task.Delay(100);
+
+            using (var form = new SettingsForm(settings, enumerator, isDarkMode))
             {
-                this.settings = AppSettings.Load();
-                RefreshAudioState();
-                UpdateLayout();
-                UpdatePosition();
+                if (form.ShowDialog() == DialogResult.OK)
+                {
+                    this.settings = AppSettings.Load();
+                    RefreshAudioState();
+                    UpdateLayout();
+                    UpdatePosition();
+                }
             }
         }
 

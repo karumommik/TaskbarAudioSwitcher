@@ -23,7 +23,11 @@ This is an extremely lightweight, stable, and convenient Windows 11 utility that
 
 ## Release History & Changelog
 
-### v3.3.0 (Current Version)
+### v3.3.1 (Current Version)
+This patch release resolves a system tray context menu lockup conflict.
+* **Tray Menu Focus Lockup Fix:** Added a 100ms asynchronous delay (`await Task.Delay(100)`) and explicit disposal wrapper when launching `SettingsForm` from the tray context menu, ensuring the context menu completely closes and releases its Win32 mouse capture/focus before the modal dialog loop starts.
+
+### v3.3.0
 This minor release introduces system-wide microphone control, modern UI menu styling, auto-dismiss popups, and localized settings tooltips.
 * **Microphone Control Button:** Added a custom microphone control button to the left of the audio output buttons. Left-clicking toggles system-wide mute (adds a red diagonal slash), right-clicking opens a context menu of input devices, and scrolling over it adjusts default microphone volume.
 * **Active Microphone Monitoring:** Highlights the microphone icon body with a solid red fill (preserving white boundaries) when any app is actively recording or listening to the microphone (e.g. Discord, browsers). This feature is configurable in settings.
