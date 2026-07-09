@@ -23,7 +23,15 @@ This is an extremely lightweight, stable, and convenient Windows 11 utility that
 
 ## Release History & Changelog
 
-### v3.2.0 (Current Version)
+### v3.3.0 (Current Version)
+This minor release introduces system-wide microphone control, modern UI menu styling, auto-dismiss popups, and localized settings tooltips.
+* **Microphone Control Button:** Added a custom microphone control button to the left of the audio output buttons. Left-clicking toggles system-wide mute (adds a red diagonal slash), right-clicking opens a context menu of input devices, and scrolling over it adjusts default microphone volume.
+* **Active Microphone Monitoring:** Highlights the microphone icon body with a solid red fill (preserving white boundaries) when any app is actively recording or listening to the microphone (e.g. Discord, browsers). This feature is configurable in settings.
+* **Modern Menu Styling:** Developed a custom themed `ModernToolStripRenderer` that styles context menus (both for microphone and main system tray) with a flat, modern appearance matching the dark/light modes.
+* **Auto-Dismiss Focus Fix:** Added focus activation via `SetForegroundWindow` on popup menus so they automatically close when clicking anywhere else.
+* **Settings Layout Adjustments:** Moved microphone configuration checkboxes to the top of the settings panel (right under output devices) and added descriptive hover ToolTips in English.
+
+### v3.2.0
 This minor release introduces automatic updates check.
 * **Auto-Update Checker:** Added an asynchronous background check at startup querying the GitHub API for newer releases, showing a modern, styled alert dialog with current/new version info and a quick link to GitHub if an update is found.
 
