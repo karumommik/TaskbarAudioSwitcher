@@ -1,4 +1,4 @@
-# Taskbar Audio Switcher (v3.3.2)
+# Taskbar Audio Switcher (v3.3.3)
 
 An extremely lightweight, stable, and convenient Windows 11 utility that automatically places itself on the taskbar (next to the system clock and system tray icons), allowing you to control all computer audio outputs, inputs, and application volumes quickly and comfortably.
 
@@ -45,7 +45,11 @@ To ensure 24/7 stability and prevent being flagged by antivirus software, this u
 
 ## 4. Release History & Changelog
 
-### v3.3.2 (Current Version)
+### v3.3.3 (Current Version)
+This patch release aligns the application update behavior with Microsoft Store guidelines.
+* **Store Auto-Updates Alignment:** Added dynamic detection of the packaging environment. The built-in GitHub update checker and update alert dialogues are automatically bypassed when running inside an MSIX container, preventing confusion for Store users who receive updates natively.
+
+### v3.3.2
 This patch release adds MSIX packaging assets and workflows for Microsoft Store publication, while keeping the standalone portable builds.
 * **Microsoft Store MSIX Support:** Integrated package manifest and asset requirements. The build pipeline now outputs a single `.msixbundle` supporting both `x64` and `ARM64` for Microsoft Store deployment.
 * **Portable Builds Preserved:** The standalone portable `.zip` releases continue to be built and published identically to previous versions.

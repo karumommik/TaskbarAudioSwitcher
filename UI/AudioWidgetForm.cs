@@ -253,8 +253,11 @@ namespace TaskbarAudioSwitcher.UI
             UpdateLayout();
             UpdatePosition();
 
-            // Check for updates asynchronously on startup
-            Task.Run(() => CheckForUpdatesAsync());
+            // Check for updates asynchronously on startup, skipping if packaged for the Store (MSIX)
+            if (!Win32.IsPackaged())
+            {
+                Task.Run(() => CheckForUpdatesAsync());
+            }
 
             // Track form closing reason
             this.FormClosing += (s, e) => {

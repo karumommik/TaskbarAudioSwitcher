@@ -64,5 +64,17 @@ namespace TaskbarAudioSwitcher.Native
             GetClassName(hwnd, sb, sb.Capacity);
             return sb.ToString();
         }
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
+        private static extern int GetCurrentPackageFullName(ref int packageFullNameLength, StringBuilder? packageFullName);
+
+        public static bool IsPackaged()
+        {
+            int length = 0;
+            int result = GetCurrentPackageFullName(ref length, null);
+            
+            // APPMODEL_ERROR_NO_PACKAGE = 15700 (0x3D54)
+            return result != 15700;
+        }
     }
 }
