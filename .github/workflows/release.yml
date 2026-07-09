@@ -24,31 +24,90 @@ jobs:
         shell: bash
         run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
 
-      - name: Publish, Zip and Checksum
+      - name: Publish, Zip and MSIX Package
         shell: pwsh
         env:
           VERSION: ${{ steps.ver.outputs.version }}
         run: |
           $ErrorActionPreference = 'Stop'
           New-Item -ItemType Directory -Force dist | Out-Null
+          New-Item -ItemType Directory -Force msix-staging | Out-Null
           
+          # Find MakeAppX.exe dynamically in Windows SDK
+          $sdkPath = Join-Path ${env:ProgramFiles(x86)} "Windows Kits\10\bin"
+          $makeAppx = Get-ChildItem -Path $sdkPath -Filter "makeappx.exe" -Recurse | Where-Object { $_.FullName -like "*x64*" } | Select-Object -First 1 -ExpandProperty FullName
+          if (-not $makeAppx) { throw "MakeAppx.exe not found in Windows SDK path!" }
+          Write-Host "Using MakeAppx: $makeAppx"
+
+          # Format MSIX version (X.Y.Z.0)
+          $msixVersion = "$env:VERSION"
+          if ($msixVersion -notmatch '^\d+\.\d+\.\d+\.\d+$') {
+              if ($msixVersion -match '^\d+\.\d+\.\d+$') {
+                  $msixVersion = "$msixVersion.0"
+              } else {
+                  throw "Invalid version format for MSIX: $msixVersion (must be X.Y.Z or X.Y.Z.W)"
+              }
+          }
+          Write-Host "MSIX Version: $msixVersion"
+
           foreach ($rid in @('win-x64', 'win-arm64')) {
             Write-Host "== Publishing Self-Contained $rid =="
             
-            # Publish self-contained single-file build
+            # 1. Publish self-contained single-file build
             dotnet publish TaskbarAudioSwitcher.csproj -c Release -r $rid `
               --self-contained true -p:PublishSingleFile=true -p:PublishReadyToRun=true `
               -p:Version=$env:VERSION -o "publish/$rid"
             if ($LASTEXITCODE -ne 0) { throw "Publish failed for $rid" }
             
+            # 2. Package standard zip release
             $zipName = "TaskbarAudioSwitcher-$env:VERSION-$rid.zip"
             Compress-Archive -Path "publish/$rid/TaskbarAudioSwitcher.exe" -DestinationPath "dist/$zipName" -Force
             
             # Generate SHA256 checksum for the zip file
             $hash = (Get-FileHash "dist/$zipName" -Algorithm SHA256).Hash.ToLower()
             "$hash  $zipName" | Out-File "dist/$zipName.sha256" -Encoding ascii
-            Write-Host "$zipName -> $hash"
+            
+            # 3. Build Architecture-Specific MSIX
+            $arch = if ($rid -eq 'win-x64') { 'x64' } else { 'arm64' }
+            $stageDir = "msix-staging/$rid"
+            New-Item -ItemType Directory -Force $stageDir | Out-Null
+            
+            # Copy executable and assets
+            Copy-Item "publish/$rid/TaskbarAudioSwitcher.exe" $stageDir/
+            if (Test-Path "Assets") {
+                Copy-Item -Path "Assets" -Destination $stageDir/ -Recurse -Force
+            } else {
+                throw "Assets folder not found! Please ensure you have added the required PNG logos."
+            }
+            
+            # Prepare appxmanifest for this architecture and version
+            $manifestContent = Get-Content "Package.appxmanifest" -Raw
+            $manifestContent = $manifestContent -replace 'Version="[^"]+"', ('Version="' + $msixVersion + '"')
+            $manifestContent = $manifestContent -replace 'ProcessorArchitecture="[^"]+"', ('ProcessorArchitecture="' + $arch + '"')
+            
+            $manifestContent | Out-File "$stageDir/AppxManifest.xml" -Encoding utf8
+            
+            # Pack individual MSIX
+            $msixOutput = "dist/TaskbarAudioSwitcher_${msixVersion}_${arch}.msix"
+            Write-Host "Packing $msixOutput..."
+            & $makeAppx pack /d $stageDir /p $msixOutput /o
+            if ($LASTEXITCODE -ne 0) { throw "MakeAppx pack failed for $rid" }
           }
+          
+          # 4. Generate combined MSIXBundle
+          Write-Host "== Creating Combined MSIXBundle =="
+          $bundleStaging = "msix-bundle-staging"
+          New-Item -ItemType Directory -Force $bundleStaging | Out-Null
+          
+          # Copy only msix files to the bundle staging folder
+          Copy-Item "dist/*.msix" $bundleStaging/
+          
+          # Build bundle
+          $bundleOutput = "dist/TaskbarAudioSwitcher_${msixVersion}_bundle.msixbundle"
+          & $makeAppx bundle /d $bundleStaging /p $bundleOutput /o
+          if ($LASTEXITCODE -ne 0) { throw "MakeAppx bundle failed!" }
+          
+          Write-Host "Packaging Complete!"
           Get-ChildItem dist | Select-Object Name, Length | Format-Table -AutoSize
 
       - name: Write release notes
@@ -61,10 +120,8 @@ jobs:
 
           This is a modern, modular release compiled under **.NET 10.0**.
 
-          * **Self-Contained & Zero Dependencies:** The download includes everything required to run the utility. You do **not** need to install any external .NET Desktop Runtimes.
-          * **DPI Scaling Support:** The interface scales dynamically to look sharp on high-DPI and high-resolution monitors (including 4K/5K displays).
-          * **Dynamic Language Switch:** Automatically switches between Estonian and English based on your system locale.
-          * **Performance Optimized:** Uses in-memory caching for active audio sessions to reduce CPU spikes and eliminate stutters when the volume mixer is open.
+          * **Microsoft Store Package (.msixbundle):** Installs the utility natively. Windows automatically selects the correct architecture (`x64` or `ARM64`).
+          * **Self-Contained & Zero Dependencies:** Standalone zip archives are available for portable usage.
 
           ---
           *Each download ships with a matching \`.sha256\` file. Verify file integrity in PowerShell with:*
@@ -87,4 +144,4 @@ jobs:
           gh release create "$TAG" \
             --title "$TAG" \
             --notes-file notes.md \
-            dist/*.zip dist/*.sha256
+            dist/*.zip dist/*.sha256 dist/*.msixbundle
