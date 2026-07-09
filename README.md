@@ -8,7 +8,7 @@ An extremely lightweight, stable, and convenient Windows 11 utility that automat
 
 ---
 
-## Key Features
+## 1. Key Features
 
 1. **Dynamic Audio Device Switching:** Easily cycle between audio outputs (e.g., Speakers, Headphones, HDMI) directly from your taskbar. Active icons display custom 3-letter nicknames or system abbreviations underneath. Supports unlimited output devices.
 2. **Microphone Control:** Dedicated microphone button supporting system-wide mute toggle with visual indicators, input device context-menu switching, and active recording monitoring (highlights red when any application is actively using the microphone).
@@ -20,9 +20,9 @@ An extremely lightweight, stable, and convenient Windows 11 utility that automat
 
 ---
 
-## Installation & Quick Start
+## 2. Installation & Quick Start
 
-### Option 1: Quick Start (Recommended)
+### Option 1: Standalone Portable Release (Recommended)
 1. Go to the [Releases](https://github.com/karumommik/TaskbarAudioSwitcher/releases) page.
 2. Download the latest `TaskbarAudioSwitcher-win-x64.zip` (or `win-arm64` if on an ARM device).
 3. Extract the `TaskbarAudioSwitcher.exe` executable to a permanent folder on your computer (e.g., `C:\Program Files\TaskbarAudioSwitcher` or a dedicated folder in your User directory).
@@ -35,7 +35,7 @@ An extremely lightweight, stable, and convenient Windows 11 utility that automat
 
 ---
 
-## Known Behaviors & Quirks
+## 3. Known Behaviors & Quirks
 
 To ensure 24/7 stability and prevent being flagged by antivirus software, this utility runs as a lightweight, borderless Win32 overlay window rather than hooking deep into the Windows Explorer (`explorer.exe`) process memory. As a result, you might notice:
 * **Brief Vanishing/Reappearing:** When minimizing windows, pressing `Win+D` (Show Desktop), opening the Start Menu, or clicking taskbar flyouts, the utility may briefly disappear for a fraction of a second. The utility automatically detects this and repositions itself back into place within 500ms.
@@ -43,53 +43,7 @@ To ensure 24/7 stability and prevent being flagged by antivirus software, this u
 
 ---
 
-## Technical Architecture
-
-* **Language/Platform:** C# 10.0 / .NET 10.0 Windows Forms (WinForms).
-* **Zero Designer Files:** Built entirely programmatically. No `.Designer.cs` code generation or layout editor. All controls and margins are constructed on the fly to maximize stability.
-* **Low-Overhead COM Interop:** Interacts with core Windows audio APIs via native CoreAudio (WASAPI) and `IPolicyConfig` COM wrappers.
-* **Microphone Safety Timer:** Active microphone recording checks run on a background thread at a low frequency (once every 1 second) to maintain 0% CPU overhead under normal operation. Active monitoring can be toggled off in settings to reduce CPU cost to zero.
-* **High-DPI Scaling:** All layouts, borders, margins, fonts, and controls dynamically adjust by querying Windows API DPI scaling factors per monitor.
-
----
-
-## How to Build & Run Locally
-
-### Prerequisites
-* .NET 10.0 SDK or higher.
-
-### Running from Source
-1. Open PowerShell in the project directory.
-2. Run the application:
-   ```bash
-   dotnet run
-   ```
-
-### Publishing Standalone Portable Builds
-To compile a single-file, self-contained executable with zero external dependencies (no .NET runtime installation required by the user):
-```bash
-dotnet publish TaskbarAudioSwitcher.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:PublishReadyToRun=true -o "./publish"
-```
-Or simply double-click the `build.bat` file in the project folder.
-
----
-
-## CI/CD Release Pipeline & Deployment
-
-Releases are fully automated via the **GitHub Actions workflow** (`.github/workflows/release.yml`).
-To publish a new release:
-1. Increment the version inside `TaskbarAudioSwitcher.csproj` (e.g., `<Version>3.3.2</Version>`).
-2. Document the release in `README.md` under the "Release History & Changelog" section.
-3. Create and push a git tag matching `v*` (e.g. `v3.3.2`):
-   ```bash
-   git tag v3.3.2
-   git push origin v3.3.2
-   ```
-4. The GitHub Action runner will automatically compile `win-x64` and `win-arm64` ZIP packages, generate `.sha256` integrity files, build the Microsoft Store `.msixbundle`, write release notes, and create the official GitHub release.
-
----
-
-## Release History & Changelog
+## 4. Release History & Changelog
 
 ### v3.3.2 (Current Version)
 This patch release adds MSIX packaging assets and workflows for Microsoft Store publication, while keeping the standalone portable builds.
@@ -171,3 +125,49 @@ The first baseline release of Taskbar Audio Switcher.
 * Simple App Volume Mixer using WASAPI COM interfaces.
 * Automatic Light/Dark mode theme detection.
 * Memory optimizations (explicit COM releasing and background garbage collection sweeps) keeping RAM usage under 15 MB.
+
+---
+
+## 5. How to Build from Source (Advanced)
+
+### Prerequisites
+* .NET 10.0 SDK or higher.
+
+### Running from Source
+1. Open PowerShell in the project directory.
+2. Run the application:
+   ```bash
+   dotnet run
+   ```
+
+### Publishing Standalone Portable Builds
+To compile a single-file, self-contained executable with zero external dependencies (no .NET runtime installation required by the user):
+```bash
+dotnet publish TaskbarAudioSwitcher.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:PublishReadyToRun=true -o "./publish"
+```
+Or simply double-click the `build.bat` file in the project folder.
+
+---
+
+## 6. Technical Architecture
+
+* **Language/Platform:** C# 10.0 / .NET 10.0 Windows Forms (WinForms).
+* **Zero Designer Files:** Built entirely programmatically. No `.Designer.cs` code generation or layout editor. All controls and margins are constructed on the fly to maximize stability.
+* **Low-Overhead COM Interop:** Interacts with core Windows audio APIs via native CoreAudio (WASAPI) and `IPolicyConfig` COM wrappers.
+* **Microphone Safety Timer:** Active microphone recording checks run on a background thread at a low frequency (once every 1 second) to maintain 0% CPU overhead under normal operation. Active monitoring can be toggled off in settings to reduce CPU cost to zero.
+* **High-DPI Scaling:** All layouts, borders, margins, fonts, and controls dynamically adjust by querying Windows API DPI scaling factors per monitor.
+
+---
+
+## 7. CI/CD Release Pipeline & Deployment
+
+Releases are fully automated via the **GitHub Actions workflow** (`.github/workflows/release.yml`).
+To publish a new release:
+1. Increment the version inside `TaskbarAudioSwitcher.csproj` (e.g., `<Version>3.3.2</Version>`).
+2. Document the release in `README.md` under the "Release History & Changelog" section.
+3. Create and push a git tag matching `v*` (e.g. `v3.3.2`):
+   ```bash
+   git tag v3.3.2
+   git push origin v3.3.2
+   ```
+4. The GitHub Action runner will automatically compile `win-x64` and `win-arm64` ZIP packages, generate `.sha256` integrity files, build the Microsoft Store `.msixbundle`, write release notes, and create the official GitHub release.
