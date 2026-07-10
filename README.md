@@ -45,6 +45,11 @@ To ensure 24/7 stability and prevent being flagged by antivirus software, this u
 
 ## 4. Release History & Changelog
 
+### v3.3.7 (Current Version)
+This patch release addresses issues with the Microsoft Store submission (MSIX).
+* **Crash Fix:** Fixed an `UnauthorizedAccessException` where the app attempted to write `comlog.txt` to the read-only WindowsApps installation directory. Logs are now written to LocalAppData.
+* **Store Assets:** Replaced default Visual Studio placeholder PNG icons in the `Assets` folder with correctly sized versions generated from the application icon (`app.ico`) to comply with Store UI guidelines.
+
 ### v3.3.6
 This patch release brings critical performance optimizations to background polling logic.
 * **Microphone Polling Optimization:** Fixed a bug where the active microphone check ran twice as fast (500ms) as designed. It now properly executes every 1000ms as per the original CPU safety architecture.

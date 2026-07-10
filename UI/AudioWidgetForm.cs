@@ -146,15 +146,18 @@ namespace TaskbarAudioSwitcher.UI
             // Initialize COM interfaces
             try
             {
-                System.IO.File.WriteAllText(System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "comlog.txt"), "Starting COM init...\n");
+                string logPath = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "TaskbarAudioSwitcher", "comlog.txt");
+                System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(logPath));
+                System.IO.File.WriteAllText(logPath, "Starting COM init...\n");
                 enumerator = (IMMDeviceEnumerator)new MMDeviceEnumeratorCom();
-                System.IO.File.AppendAllText(System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "comlog.txt"), "Enumerator created.\n");
+                System.IO.File.AppendAllText(logPath, "Enumerator created.\n");
                 policyConfig = (IPolicyConfig)new CPolicyConfigClient();
-                System.IO.File.AppendAllText(System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "comlog.txt"), "PolicyConfig created.\n");
+                System.IO.File.AppendAllText(logPath, "PolicyConfig created.\n");
             }
             catch (Exception ex)
             {
-                System.IO.File.AppendAllText(System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "comlog.txt"), "ERROR: " + ex.ToString() + "\n");
+                string logPath = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "TaskbarAudioSwitcher", "comlog.txt");
+                System.IO.File.AppendAllText(logPath, "ERROR: " + ex.ToString() + "\n");
                 MessageBox.Show("Failed to initialize Windows Audio COM components: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 Application.Exit();
             }
