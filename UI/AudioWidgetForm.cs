@@ -146,8 +146,18 @@ namespace TaskbarAudioSwitcher.UI
             // Initialize COM interfaces
             try
             {
-                string logPath = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "TaskbarAudioSwitcher", "comlog.txt");
-                System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(logPath));
+                string logPath;
+                if (Native.Win32.IsPackaged())
+                {
+                    string dir = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "TaskbarAudioSwitcher");
+                    System.IO.Directory.CreateDirectory(dir);
+                    logPath = System.IO.Path.Combine(dir, "comlog.txt");
+                }
+                else
+                {
+                    logPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "comlog.txt");
+                }
+                
                 System.IO.File.WriteAllText(logPath, "Starting COM init...\n");
                 enumerator = (IMMDeviceEnumerator)new MMDeviceEnumeratorCom();
                 System.IO.File.AppendAllText(logPath, "Enumerator created.\n");
@@ -156,7 +166,9 @@ namespace TaskbarAudioSwitcher.UI
             }
             catch (Exception ex)
             {
-                string logPath = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "TaskbarAudioSwitcher", "comlog.txt");
+                string logPath = Native.Win32.IsPackaged() 
+                    ? System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "TaskbarAudioSwitcher", "comlog.txt") 
+                    : System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "comlog.txt");
                 System.IO.File.AppendAllText(logPath, "ERROR: " + ex.ToString() + "\n");
                 MessageBox.Show("Failed to initialize Windows Audio COM components: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 Application.Exit();

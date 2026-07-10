@@ -21,6 +21,12 @@ namespace TaskbarAudioSwitcher.Core
 
         private static string GetFilePath()
         {
+            if (TaskbarAudioSwitcher.Native.Win32.IsPackaged())
+            {
+                string dir = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "TaskbarAudioSwitcher");
+                System.IO.Directory.CreateDirectory(dir);
+                return System.IO.Path.Combine(dir, "settings.txt");
+            }
             return System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "settings.txt");
         }
 

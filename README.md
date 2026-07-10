@@ -45,7 +45,10 @@ To ensure 24/7 stability and prevent being flagged by antivirus software, this u
 
 ## 4. Release History & Changelog
 
-### v3.3.7 (Current Version)
+### v3.3.8 (Current Version)
+* **Portable Behavior Restoration:** Fixed a regression in v3.3.7 where the standalone `.exe` began saving logs and settings to `%LOCALAPPDATA%`. The application now dynamically detects if it's running inside an MSIX container. If packaged (MSIX), it uses `LocalAppData` to comply with Store rules; if running as a standalone `.exe`, it perfectly preserves 100% portable behavior by saving `settings.txt` and `comlog.txt` directly next to the executable.
+
+### v3.3.7
 This patch release addresses issues with the Microsoft Store submission (MSIX).
 * **Crash Fix:** Fixed an `UnauthorizedAccessException` where the app attempted to write `comlog.txt` to the read-only WindowsApps installation directory. Logs are now written to LocalAppData.
 * **Store Assets:** Replaced default Visual Studio placeholder PNG icons in the `Assets` folder with correctly sized versions generated from the application icon (`app.ico`) to comply with Store UI guidelines.
