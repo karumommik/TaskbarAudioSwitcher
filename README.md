@@ -45,7 +45,13 @@ To ensure 24/7 stability and prevent being flagged by antivirus software, this u
 
 ## 4. Release History & Changelog
 
-### v3.3.8 (Current Version)
+### v3.3.9 (Current Version)
+* **High-DPI / Scaling UI Fixes:** Adjusted the dynamic layout width of the volume text labels in the application and mixer interfaces to correctly fit "100%" on displays using 125% or higher DPI scaling. Volume percentages are now strictly aligned to the right edge.
+* **Secondary Monitor Taskbar Menu Fix:** Completely refactored the tray icon context menu rendering behavior. The menu now spawns via a hidden background process anchored natively to the system shell, which guarantees the context menu always appears exactly at the cursor position on multi-monitor setups without taskbar flashing or focus loss issues.
+* **Clock Overlay Fix:** Increased the fallback offset padding used when calculating layout dimensions for secondary monitor taskbars, fully preventing the widget from covering the new Windows 11 secondary clock overlay.
+* **Settings Dialog Location:** Hardcoded the settings menu to permanently calculate its screen boundaries using `Screen.PrimaryScreen`, forcing the layout to uniformly generate perfectly centered on the primary display regardless of the user's mouse position during invocation.
+
+### v3.3.8
 * **Portable Behavior Restoration:** Fixed a regression in v3.3.7 where the standalone `.exe` began saving logs and settings to `%LOCALAPPDATA%`. The application now dynamically detects if it's running inside an MSIX container. If packaged (MSIX), it uses `LocalAppData` to comply with Store rules; if running as a standalone `.exe`, it perfectly preserves 100% portable behavior by saving `settings.txt` and `comlog.txt` directly next to the executable.
 
 ### v3.3.7

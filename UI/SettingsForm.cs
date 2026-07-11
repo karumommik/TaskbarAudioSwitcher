@@ -53,7 +53,16 @@ namespace TaskbarAudioSwitcher.UI
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
             this.MinimizeBox = false;
-            this.StartPosition = FormStartPosition.CenterScreen;
+            this.StartPosition = FormStartPosition.Manual;
+            this.Load += (s, e) => {
+                var scr = Screen.PrimaryScreen;
+                if (scr != null) {
+                    this.Location = new Point(
+                        scr.WorkingArea.Left + (scr.WorkingArea.Width - this.Width) / 2,
+                        scr.WorkingArea.Top + (scr.WorkingArea.Height - this.Height) / 2
+                    );
+                }
+            };
             this.ShowInTaskbar = true;
 
             Color bgColor = isDarkMode ? Color.FromArgb(32, 32, 32) : Color.FromArgb(240, 240, 240);

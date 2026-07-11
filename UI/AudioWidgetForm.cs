@@ -210,8 +210,8 @@ namespace TaskbarAudioSwitcher.UI
             {
                 Font = new Font("Segoe UI", 8f),
                 ForeColor = themeTextColor,
-                TextAlign = ContentAlignment.MiddleLeft,
-                Size = new Size(32, 16)
+                TextAlign = ContentAlignment.MiddleRight,
+                Size = new Size(42, 16)
             };
             this.Controls.Add(lblVolumeText);
 
@@ -336,8 +336,27 @@ namespace TaskbarAudioSwitcher.UI
             });
             contextMenu.Items.Add(exitItem);
 
-            notifyIcon.ContextMenuStrip = contextMenu;
-            notifyIcon.DoubleClick += (s, e) => UpdatePosition();
+            var trayHost = new Form {
+                StartPosition = FormStartPosition.Manual,
+                FormBorderStyle = FormBorderStyle.None,
+                ShowInTaskbar = false,
+                Size = new Size(0, 0),
+                Location = new Point(-32000, -32000)
+            };
+            trayHost.Show();
+
+            notifyIcon.MouseClick += (s, e) => {
+                if (e.Button == MouseButtons.Right) {
+                    Win32.SetForegroundWindow(trayHost.Handle);
+                    contextMenu.Show(trayHost, trayHost.PointToClient(Cursor.Position));
+                    Win32.SetForegroundWindow(contextMenu.Handle);
+                }
+            };
+            notifyIcon.DoubleClick += (s, e) => {
+                if (((MouseEventArgs)e).Button == MouseButtons.Left) {
+                    UpdatePosition();
+                }
+            };
         }
 
         private async void ShowSettings()
@@ -768,7 +787,7 @@ namespace TaskbarAudioSwitcher.UI
             int sliderW = (int)(70 * scale);
             int margin = (int)(4 * scale);
             int padding = (int)(8 * scale);
-            int textW = (int)(32 * scale);
+            int textW = (int)(42 * scale);
 
             int baseY = this.Height - collapsedH;
             int currentX = padding;
@@ -1042,7 +1061,7 @@ namespace TaskbarAudioSwitcher.UI
 
             if (currentAlignment == "Left")
             {
-                if (scr.Primary)
+                    if (scr.Primary)
                     targetLeft = bounds.Left + (int)(84 * scale);
                 else
                     targetLeft = bounds.Left + (int)(12 * scale);
@@ -1064,7 +1083,7 @@ namespace TaskbarAudioSwitcher.UI
                 }
                 else
                 {
-                    targetLeft = bounds.Right - calculatedWidth - (int)(16 * scale);
+                    targetLeft = bounds.Right - calculatedWidth - (int)(200 * scale);
                 }
             }
 
@@ -1716,7 +1735,7 @@ namespace TaskbarAudioSwitcher.UI
                         Font = new Font("Segoe UI", 7.5f * scale),
                         ForeColor = themeTextColor,
                         Text = string.Format("{0:0}%", data.Volume * 100),
-                        TextAlign = ContentAlignment.MiddleLeft,
+                        TextAlign = ContentAlignment.MiddleRight,
                         BackColor = themeBgColor
                     };
                     volLabel.MouseWheel += Form_MouseWheel;
@@ -1899,7 +1918,7 @@ namespace TaskbarAudioSwitcher.UI
                     };
                     rowPanel.Controls.Add(nameLabel);
                     
-                    int sliderWidth = rw - (int)(112 * scale) - (int)(36 * scale) - (int)(8 * scale);
+                    int sliderWidth = rw - (int)(112 * scale) - (int)(46 * scale) - (int)(8 * scale);
                     VolumeSlider slider = new VolumeSlider
                     {
                         Location = new Point((int)(112 * scale), (int)(14 * scale)),
@@ -1912,12 +1931,12 @@ namespace TaskbarAudioSwitcher.UI
                     
                     Label volLabel = new Label
                     {
-                        Location = new Point(rw - (int)(36 * scale), (int)(10 * scale)),
-                        Size = new Size((int)(30 * scale), (int)(16 * scale)),
+                        Location = new Point(rw - (int)(46 * scale), (int)(10 * scale)),
+                        Size = new Size((int)(42 * scale), (int)(16 * scale)),
                         Font = new Font("Segoe UI", 8f * scale),
                         ForeColor = themeTextColor,
                         Text = string.Format("{0:0}%", data.Volume * 100),
-                        TextAlign = ContentAlignment.MiddleLeft,
+                        TextAlign = ContentAlignment.MiddleRight,
                         BackColor = themeBgColor
                     };
                     
