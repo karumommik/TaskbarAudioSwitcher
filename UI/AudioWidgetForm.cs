@@ -126,15 +126,22 @@ namespace TaskbarAudioSwitcher.UI
             // Auto-migrate ScreenDeviceName if empty and screens exist
             if (string.IsNullOrEmpty(settings.ScreenDeviceName))
             {
+                Screen primary = Screen.PrimaryScreen ?? Screen.AllScreens[0];
+                settings.ScreenDeviceName = primary.DeviceName;
                 var screens = Screen.AllScreens;
-                if (settings.ScreenIndex >= 0 && settings.ScreenIndex < screens.Length)
+                for (int i = 0; i < screens.Length; i++)
                 {
-                    settings.ScreenDeviceName = screens[settings.ScreenIndex].DeviceName;
-                    settings.Save();
+                    if (screens[i].DeviceName == primary.DeviceName)
+                    {
+                        settings.ScreenIndex = i;
+                        break;
+                    }
                 }
+                settings.Save();
             }
 
             // Windows settings
+            this.Text = "TaskbarAudioSwitcherWidget";
             this.FormBorderStyle = FormBorderStyle.None;
             this.ShowInTaskbar = false;
             this.TopMost = true;
@@ -334,24 +341,31 @@ namespace TaskbarAudioSwitcher.UI
                 notifyIcon.Visible = false;
                 Application.Exit();
             });
-            contextMenu.Items.Add(exitItem);
-
-            var trayHost = new Form {
-                StartPosition = FormStartPosition.Manual,
-                FormBorderStyle = FormBorderStyle.None,
-                ShowInTaskbar = false,
-                Size = new Size(0, 0),
-                Location = new Point(-32000, -32000)
-            };
-            trayHost.Show();
-
             notifyIcon.MouseClick += (s, e) => {
                 if (e.Button == MouseButtons.Right) {
-                    Win32.SetForegroundWindow(trayHost.Handle);
-                    contextMenu.Show(trayHost, trayHost.PointToClient(Cursor.Position));
-                    Win32.SetForegroundWindow(contextMenu.Handle);
+                    var dummy = new Form {
+                        FormBorderStyle = FormBorderStyle.None,
+                        ShowInTaskbar = false,
+                        StartPosition = FormStartPosition.Manual,
+                        Size = new Size(1, 1),
+                        Opacity = 0.01
+                    };
+                    Point pos = Cursor.Position;
+                    IntPtr dummyHandle = dummy.Handle;
+                    Win32.SetWindowPos(dummyHandle, IntPtr.Zero, pos.X, pos.Y, 1, 1, 0x0004 | 0x0010 | 0x0040);
+                    Win32.SetForegroundWindow(dummyHandle);
+                    
+                    ToolStripDropDownClosedEventHandler? handler = null;
+                    handler = (sender, args) => {
+                        if (handler != null) contextMenu.Closed -= handler;
+                        dummy.Close();
+                        dummy.Dispose();
+                    };
+                    contextMenu.Closed += handler;
+                    contextMenu.Show(dummy, new Point(0, 0));
                 }
             };
+
             notifyIcon.DoubleClick += (s, e) => {
                 if (((MouseEventArgs)e).Button == MouseButtons.Left) {
                     UpdatePosition();
@@ -966,6 +980,19 @@ namespace TaskbarAudioSwitcher.UI
                     }
                 }
             }
+            if (scr == null)
+            {
+                // Default to primary screen first for out-of-the-box experience
+                foreach (var s in Screen.AllScreens)
+                {
+                    if (s.Primary)
+                    {
+                        scr = s;
+                        break;
+                    }
+                }
+            }
+
             if (scr == null)
             {
                 int scrIdx = Math.Max(0, Math.Min(Screen.AllScreens.Length - 1, settings.ScreenIndex));

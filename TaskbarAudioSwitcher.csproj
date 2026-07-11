@@ -15,7 +15,7 @@
     <ApplicationIcon>Assets\app.ico</ApplicationIcon>
     <!-- Suppress WinForms Designer analyzer warning as controls are created programmatically -->
     <NoWarn>$(NoWarn);WFO1000</NoWarn>
-    <Version>3.3.9</Version>
+    <Version>3.3.10</Version>
     <Product>Taskbar Audio Switcher</Product>
     <Company>Erki Lippand</Company>
   </PropertyGroup>

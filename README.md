@@ -1,4 +1,4 @@
-# Taskbar Audio Switcher (v3.3.5)
+# Taskbar Audio Switcher (v3.3.10)
 
 An extremely lightweight, stable, and convenient Windows 11 utility that automatically places itself on the taskbar (next to the system clock and system tray icons), allowing you to control all computer audio outputs, inputs, and application volumes quickly and comfortably.
 
@@ -45,7 +45,11 @@ To ensure 24/7 stability and prevent being flagged by antivirus software, this u
 
 ## 4. Release History & Changelog
 
-### v3.3.9 (Current Version)
+### v3.3.10 (Current Version)
+* **Secondary Monitor Context Menu Fix:** Fixed a DPI scaling/monitor boundary issue that caused right-clicking on the tray icon to fail when the widget was directed to a secondary display. It now positions a dummy window natively on the correct screen to ensure the menu renders exactly at the cursor coordinates.
+* **Primary Monitor Default Launch:** Fixed a startup initialization issue where the settings were instantly auto-migrated to the first enumerated screen index, often placing the widget on secondary screens out-of-the-box. It now explicitly resolves and binds to the primary screen on first-run.
+
+### v3.3.9
 * **High-DPI / Scaling UI Fixes:** Adjusted the dynamic layout width of the volume text labels in the application and mixer interfaces to correctly fit "100%" on displays using 125% or higher DPI scaling. Volume percentages are now strictly aligned to the right edge.
 * **Secondary Monitor Taskbar Menu Fix:** Completely refactored the tray icon context menu rendering behavior. The menu now spawns via a hidden background process anchored natively to the system shell, which guarantees the context menu always appears exactly at the cursor position on multi-monitor setups without taskbar flashing or focus loss issues.
 * **Clock Overlay Fix:** Increased the fallback offset padding used when calculating layout dimensions for secondary monitor taskbars, fully preventing the widget from covering the new Windows 11 secondary clock overlay.
