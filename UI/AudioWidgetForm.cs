@@ -2146,6 +2146,17 @@ namespace TaskbarAudioSwitcher.UI
 
         private bool IsStartupEnabled()
         {
+            if (Win32.IsPackaged())
+            {
+                try
+                {
+                    var task = Windows.ApplicationModel.StartupTask.GetAsync("TaskbarAudioSwitcherStartupTask").AsTask().GetAwaiter().GetResult();
+                    return task.State == Windows.ApplicationModel.StartupTaskState.Enabled ||
+                           task.State == Windows.ApplicationModel.StartupTaskState.EnabledByPolicy;
+                }
+                catch { return false; }
+            }
+
             try
             {
                 using (var key = Registry.CurrentUser.OpenSubKey(RunRegistryKey))
@@ -2158,6 +2169,24 @@ namespace TaskbarAudioSwitcher.UI
 
         private void SetStartup(bool enable)
         {
+            if (Win32.IsPackaged())
+            {
+                try
+                {
+                    var task = Windows.ApplicationModel.StartupTask.GetAsync("TaskbarAudioSwitcherStartupTask").AsTask().GetAwaiter().GetResult();
+                    if (enable)
+                    {
+                        _ = task.RequestEnableAsync().AsTask().GetAwaiter().GetResult();
+                    }
+                    else
+                    {
+                        task.Disable();
+                    }
+                }
+                catch { }
+                return;
+            }
+
             try
             {
                 using (var key = Registry.CurrentUser.OpenSubKey(RunRegistryKey, true))

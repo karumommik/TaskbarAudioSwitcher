@@ -1,4 +1,4 @@
-# Taskbar Audio Switcher (v3.3.10)
+# Taskbar Audio Switcher (v3.3.11)
 
 An extremely lightweight, stable, and convenient Windows 11 utility that automatically places itself on the taskbar (next to the system clock and system tray icons), allowing you to control all computer audio outputs, inputs, and application volumes quickly and comfortably.
 
@@ -45,7 +45,10 @@ To ensure 24/7 stability and prevent being flagged by antivirus software, this u
 
 ## 4. Release History & Changelog
 
-### v3.3.10 (Current Version)
+### v3.3.11 (Current Version)
+* **MS Store/MSIX Package Startup Fix:** Resolved an issue where MS Store packages/MSIX installations could not set themselves to run at system startup. Windows virtualizes registry writes for packaged apps, rendering normal Registry Run key manipulation ineffective. Added support for Windows.ApplicationModel.StartupTask WinRT APIs and added the `desktop:StartupTask` extension to the AppX manifest to natively enable startup for the Store edition.
+
+### v3.3.10
 * **Secondary Monitor Context Menu Fix:** Fixed a DPI scaling/monitor boundary issue that caused right-clicking on the tray icon to fail when the widget was directed to a secondary display. It now positions a dummy window natively on the correct screen to ensure the menu renders exactly at the cursor coordinates.
 * **Primary Monitor Default Launch:** Fixed a startup initialization issue where the settings were instantly auto-migrated to the first enumerated screen index, often placing the widget on secondary screens out-of-the-box. It now explicitly resolves and binds to the primary screen on first-run.
 
