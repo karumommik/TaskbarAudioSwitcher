@@ -1,4 +1,4 @@
-# Taskbar Audio Switcher (v3.3.11)
+# Taskbar Audio Switcher (v3.4.0)
 
 An extremely lightweight, stable, and convenient Windows 11 utility that automatically places itself on the taskbar (next to the system clock and system tray icons), allowing you to control all computer audio outputs, inputs, and application volumes quickly and comfortably.
 
@@ -45,7 +45,14 @@ To ensure 24/7 stability and prevent being flagged by antivirus software, this u
 
 ## 4. Release History & Changelog
 
-### v3.3.11 (Current Version)
+### v3.4.0 (Current Version)
+* **Per-Application Audio Routing:** Added a dedicated routing button at the end of each volume mixer row (curved arrow icon). Left-clicking this button opens a context menu of active audio output devices, allowing you to redirect sound output for that specific application. Right-clicking the button instantly resets the application's audio routing back to the system default.
+* **Low-Level COM Function Pointer Interop:** Solved Windows 11 VTable slot shifting (mapping `SetPersistedDefaultAudioEndpoint` to VTable slot 25 and `GetPersistedDefaultAudioEndpoint` to slot 26) and aligned COM delegate signatures to match EarTrumpet specifications (`processId, flow, role, deviceId`). Bypasses CLR COM interface dispatch to prevent memory access violations across all audio roles (`eConsole`, `eMultimedia`, `eCommunications`).
+* **Multi-Process App Routing Broadcast:** Automatically resolves and broadcasts audio policy routing to all running PIDs belonging to multi-process applications (such as Firefox, Spotify, Chrome, Edge), ensuring seamless real-time output switching across child render processes.
+* **Windows 11 SWD Device Path Translation:** Implemented automatic formatting and parsing of Windows 11 Software Device Interface Paths (`\\?\SWD#MMDEVAPI#{deviceId}#{e6327cad-dcec-4949-ae8a-991e976a79d2}`), guaranteeing full device recognition by the Windows Audio Service.
+* **System Tray Context Menu Exit Option:** Fixed a bug where the "Exit" option was missing from the system tray context menu. Clicking "Exit" now forcefully terminates the process (`Environment.Exit`) to ensure a clean exit.
+
+### v3.3.11
 * **MS Store/MSIX Package Startup Fix:** Resolved an issue where MS Store packages/MSIX installations could not set themselves to run at system startup. Windows virtualizes registry writes for packaged apps, rendering normal Registry Run key manipulation ineffective. Added support for Windows.ApplicationModel.StartupTask WinRT APIs and added the `desktop:StartupTask` extension to the AppX manifest to natively enable startup for the Store edition.
 
 ### v3.3.10

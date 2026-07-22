@@ -123,24 +123,33 @@ jobs:
           if-no-files-found: error
 
       - name: Write release notes
-        shell: bash
+        shell: pwsh
         env:
           VERSION: ${{ steps.ver.outputs.version }}
         run: |
-          cat > notes.md <<EOF
-          ### Taskbar Audio Switcher v${VERSION}
+          $readme = Get-Content "README.md" -Raw
+          $versionHeader = "### v$env:VERSION"
+          $notes = ""
+          if ($readme -match "(?s)$([regex]::Escape($versionHeader))(.*?)(?=### v|\r?\n---|\Z)") {
+              $notes = $matches[2].Trim()
+          } else {
+              $notes = "* Full release build for version $env:VERSION"
+          }
 
-          This is a modern, modular release compiled under **.NET 10.0**.
+          $releaseNotes = @"
+          ### Taskbar Audio Switcher v$env:VERSION
 
-          * **Self-Contained & Zero Dependencies:** Standalone zip archives are available for portable usage.
+          $notes
 
           ---
-          *Each download ships with a matching \`.sha256\` file. Verify file integrity in PowerShell with:*
+          *Each download ships with a matching `.sha256` file. Verify file integrity in PowerShell with:*
 
-          \`\`\`powershell
-          (Get-FileHash TaskbarAudioSwitcher-${VERSION}-win-x64.zip -Algorithm SHA256).Hash
-          \`\`\`
-          EOF
+          ```powershell
+          (Get-FileHash TaskbarAudioSwitcher-$env:VERSION-win-x64.zip -Algorithm SHA256).Hash
+          ```
+          "@
+
+          $releaseNotes | Out-File -FilePath notes.md -Encoding utf8
 
       - name: Create GitHub Release
         env:
@@ -155,4 +164,4 @@ jobs:
           gh release create "$TAG" \
             --title "$TAG" \
             --notes-file notes.md \
-            dist/*.zip dist/*.sha256
+            dist/*.zip dist/*.sha256 dist/*.msixbundle

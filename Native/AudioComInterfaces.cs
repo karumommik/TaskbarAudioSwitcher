@@ -188,4 +188,327 @@ namespace TaskbarAudioSwitcher.Native
         [DllImport("ole32.dll")]
         public static extern void PropVariantClear(ref PROPVARIANT pvar);
     }
+
+    internal static class Combase
+    {
+        [DllImport("combase.dll", PreserveSig = true)]
+        public static extern int RoGetActivationFactory(
+            IntPtr activatableClassId,
+            [In] ref Guid iid,
+            out IntPtr factory);
+
+        [DllImport("combase.dll", CallingConvention = CallingConvention.StdCall)]
+        public static extern int WindowsCreateString(
+            [MarshalAs(UnmanagedType.LPWStr)] string sourceString,
+            uint length,
+            out IntPtr hstring);
+
+        [DllImport("combase.dll", CallingConvention = CallingConvention.StdCall)]
+        public static extern int WindowsDeleteString(IntPtr hstring);
+
+        [DllImport("combase.dll", CallingConvention = CallingConvention.StdCall)]
+        public static extern IntPtr WindowsGetStringRawBuffer(IntPtr hstring, out uint length);
+    }
+
+    internal static class AudioPolicyConfigHelper
+    {
+        private static IntPtr _factory21H2 = IntPtr.Zero;
+        private static IntPtr _factoryDownlevel = IntPtr.Zero;
+        private static bool _initialized = false;
+        private static bool _is21H2OrNewer = false;
+
+        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+        delegate int SetPersistedDefaultAudioEndpointDelegate(IntPtr thisPtr, uint processId, int flow, int role, IntPtr deviceId);
+
+        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+        delegate int GetPersistedDefaultAudioEndpointDelegate(IntPtr thisPtr, uint processId, int flow, int role, out IntPtr deviceId);
+
+        private static SetPersistedDefaultAudioEndpointDelegate? _set21H2;
+        private static GetPersistedDefaultAudioEndpointDelegate? _get21H2;
+
+        private static SetPersistedDefaultAudioEndpointDelegate? _setDownlevel;
+        private static GetPersistedDefaultAudioEndpointDelegate? _getDownlevel;
+
+        private static void Log(string message)
+        {
+            try
+            {
+                string path = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "mixerlog.txt");
+                System.IO.File.AppendAllText(path, string.Format("[APCH] {0:yyyy-MM-dd HH:mm:ss} - {1}\n", DateTime.Now, message));
+            }
+            catch {}
+        }
+
+        private static void Initialize()
+        {
+            if (_initialized) return;
+            try
+            {
+                var version = Environment.OSVersion.Version;
+                _is21H2OrNewer = version.Major >= 10 && version.Build >= 22000;
+                Log(string.Format("Initialize: Major={0}, Build={1}, is21H2OrNewer={2}", version.Major, version.Build, _is21H2OrNewer));
+
+                string className = "Windows.Media.Internal.AudioPolicyConfig";
+                IntPtr hClass = IntPtr.Zero;
+                int hrString = Combase.WindowsCreateString(className, (uint)className.Length, out hClass);
+                Log(string.Format("Initialize: WindowsCreateString hr=0x{0:X8}", hrString));
+
+                if (hrString == 0 && hClass != IntPtr.Zero)
+                {
+                    try
+                    {
+                        if (_is21H2OrNewer)
+                        {
+                            Guid iid21H2 = new Guid("ab3d4648-e242-459f-b02f-541c70306324");
+                            IntPtr pFactory = IntPtr.Zero;
+                            int hr = Combase.RoGetActivationFactory(hClass, ref iid21H2, out pFactory);
+                            Log(string.Format("Initialize: RoGetActivationFactory 21H2 hr=0x{0:X8}, pFactory=0x{1:X}", hr, pFactory.ToInt64()));
+                            if (hr == 0 && pFactory != IntPtr.Zero)
+                            {
+                                _factory21H2 = pFactory;
+                                IntPtr pVtbl = Marshal.ReadIntPtr(_factory21H2);
+                                
+                                IntPtr pSet = Marshal.ReadIntPtr(pVtbl, 25 * IntPtr.Size);
+                                IntPtr pGet = Marshal.ReadIntPtr(pVtbl, 26 * IntPtr.Size);
+                                
+                                _set21H2 = Marshal.GetDelegateForFunctionPointer<SetPersistedDefaultAudioEndpointDelegate>(pSet);
+                                _get21H2 = Marshal.GetDelegateForFunctionPointer<GetPersistedDefaultAudioEndpointDelegate>(pGet);
+                                
+                                Log("Initialize: 21H2 function delegates compiled successfully.");
+                            }
+                        }
+                        else
+                        {
+                            Guid iidDownlevel = new Guid("2a59116d-6c4f-45e0-a74f-707e3fef9258");
+                            IntPtr pFactory = IntPtr.Zero;
+                            int hr = Combase.RoGetActivationFactory(hClass, ref iidDownlevel, out pFactory);
+                            Log(string.Format("Initialize: RoGetActivationFactory Downlevel hr=0x{0:X8}, pFactory=0x{1:X}", hr, pFactory.ToInt64()));
+                            if (hr == 0 && pFactory != IntPtr.Zero)
+                            {
+                                _factoryDownlevel = pFactory;
+                                IntPtr pVtbl = Marshal.ReadIntPtr(_factoryDownlevel);
+                                
+                                IntPtr pSet = Marshal.ReadIntPtr(pVtbl, 22 * IntPtr.Size);
+                                IntPtr pGet = Marshal.ReadIntPtr(pVtbl, 23 * IntPtr.Size);
+                                
+                                _setDownlevel = Marshal.GetDelegateForFunctionPointer<SetPersistedDefaultAudioEndpointDelegate>(pSet);
+                                _getDownlevel = Marshal.GetDelegateForFunctionPointer<GetPersistedDefaultAudioEndpointDelegate>(pGet);
+                                
+                                Log("Initialize: Downlevel function delegates compiled successfully.");
+                            }
+                        }
+                    }
+                    finally
+                    {
+                        Combase.WindowsDeleteString(hClass);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Log("Initialize Error: " + ex.ToString());
+            }
+            _initialized = true;
+        }
+
+        public static string? GetApplicationOutputDevice(uint processId)
+        {
+            Initialize();
+            string? deviceId = null;
+            try
+            {
+                // Get all candidate PIDs (the given processId + all PIDs with the same ProcessName)
+                System.Collections.Generic.List<uint> pidsToTry = new System.Collections.Generic.List<uint> { processId };
+                try
+                {
+                    using (var targetProc = System.Diagnostics.Process.GetProcessById((int)processId))
+                    {
+                        string procName = targetProc.ProcessName;
+                        foreach (var p in System.Diagnostics.Process.GetProcessesByName(procName))
+                        {
+                            uint pid = (uint)p.Id;
+                            if (!pidsToTry.Contains(pid))
+                            {
+                                pidsToTry.Add(pid);
+                            }
+                        }
+                    }
+                }
+                catch { }
+
+                foreach (uint pid in pidsToTry)
+                {
+                    IntPtr pDeviceId = IntPtr.Zero;
+                    int hr = -1;
+                    if (_is21H2OrNewer && _factory21H2 != IntPtr.Zero && _get21H2 != null)
+                    {
+                        hr = _get21H2(_factory21H2, pid, 0, 0, out pDeviceId); // 0 = eRender, 0 = eConsole
+                        if (hr == 0 && pDeviceId != IntPtr.Zero)
+                        {
+                            uint len = 0;
+                            IntPtr rawBuffer = Combase.WindowsGetStringRawBuffer(pDeviceId, out len);
+                            if (rawBuffer != IntPtr.Zero && len > 0)
+                            {
+                                deviceId = Marshal.PtrToStringUni(rawBuffer, (int)len);
+                            }
+                            Combase.WindowsDeleteString(pDeviceId);
+                        }
+                        
+                        if (deviceId != null && deviceId.StartsWith(@"\\?\SWD#MMDEVAPI#", StringComparison.OrdinalIgnoreCase))
+                        {
+                            int start = deviceId.IndexOf('{');
+                            if (start >= 0)
+                            {
+                                int end = deviceId.IndexOf('}', start);
+                                if (end > start)
+                                {
+                                    int nextStart = deviceId.IndexOf('{', end + 1);
+                                    if (nextStart >= 0)
+                                    {
+                                        int nextEnd = deviceId.IndexOf('}', nextStart);
+                                        if (nextEnd > nextStart)
+                                        {
+                                            deviceId = deviceId.Substring(start, nextEnd - start + 1);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        if (!string.IsNullOrEmpty(deviceId))
+                        {
+                            Log(string.Format("GetApplicationOutputDevice (21H2+): PID={0}, hr=0x{1:X8}, DevId={2}", pid, hr, deviceId));
+                            break;
+                        }
+                    }
+                    else if (_factoryDownlevel != IntPtr.Zero && _getDownlevel != null)
+                    {
+                        hr = _getDownlevel(_factoryDownlevel, pid, 0, 0, out pDeviceId); // 0 = eRender, 0 = eConsole
+                        if (hr == 0 && pDeviceId != IntPtr.Zero)
+                        {
+                            uint len = 0;
+                            IntPtr rawBuffer = Combase.WindowsGetStringRawBuffer(pDeviceId, out len);
+                            if (rawBuffer != IntPtr.Zero && len > 0)
+                            {
+                                deviceId = Marshal.PtrToStringUni(rawBuffer, (int)len);
+                            }
+                            Combase.WindowsDeleteString(pDeviceId);
+                        }
+                        if (!string.IsNullOrEmpty(deviceId))
+                        {
+                            Log(string.Format("GetApplicationOutputDevice (Downlevel): PID={0}, hr=0x{1:X8}, DevId={2}", pid, hr, deviceId));
+                            break;
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Log(string.Format("GetApplicationOutputDevice Error: PID={0}, {1}", processId, ex.ToString()));
+            }
+            return deviceId;
+        }
+
+        public static int SetApplicationOutputDevice(uint processId, string? deviceId)
+        {
+            Initialize();
+            Log(string.Format("SetApplicationOutputDevice Request: PID={0}, TargetDev={1}", processId, deviceId ?? "RESET"));
+            
+            // Collect all PIDs for this application (the session PID + all processes matching process name)
+            System.Collections.Generic.List<uint> targetPids = new System.Collections.Generic.List<uint> { processId };
+            try
+            {
+                using (var proc = System.Diagnostics.Process.GetProcessById((int)processId))
+                {
+                    string procName = proc.ProcessName;
+                    foreach (var p in System.Diagnostics.Process.GetProcessesByName(procName))
+                    {
+                        uint pId = (uint)p.Id;
+                        if (!targetPids.Contains(pId))
+                        {
+                            targetPids.Add(pId);
+                        }
+                    }
+                }
+            }
+            catch { }
+
+            int hr = -1;
+            try
+            {
+                if (_is21H2OrNewer && _factory21H2 != IntPtr.Zero && _set21H2 != null)
+                {
+                    string? devicePath = null;
+                    if (!string.IsNullOrEmpty(deviceId))
+                    {
+                        // Windows 11 expects the SWD MMDEVAPI path
+                        devicePath = $@"\\?\SWD#MMDEVAPI#{deviceId}#{{e6327cad-dcec-4949-ae8a-991e976a79d2}}";
+                    }
+
+                    IntPtr hString = IntPtr.Zero;
+                    if (!string.IsNullOrEmpty(devicePath))
+                    {
+                        Combase.WindowsCreateString(devicePath, (uint)devicePath.Length, out hString);
+                    }
+
+                    try
+                    {
+                        foreach (uint pid in targetPids)
+                        {
+                            for (int role = 0; role <= 2; role++)
+                            {
+                                int res = _set21H2(_factory21H2, pid, 0, role, hString);
+                                if (res == 0) hr = 0;
+                            }
+                            Log(string.Format("SetPersistedDefaultAudioEndpoint (21H2+): PID={0}, roles 0-2 hr=0x{1:X8}", pid, hr));
+                        }
+                    }
+                    finally
+                    {
+                        if (hString != IntPtr.Zero)
+                        {
+                            Combase.WindowsDeleteString(hString);
+                        }
+                    }
+                }
+                else if (_factoryDownlevel != IntPtr.Zero && _setDownlevel != null)
+                {
+                    IntPtr hString = IntPtr.Zero;
+                    if (!string.IsNullOrEmpty(deviceId))
+                    {
+                        Combase.WindowsCreateString(deviceId, (uint)deviceId.Length, out hString);
+                    }
+
+                    try
+                    {
+                        foreach (uint pid in targetPids)
+                        {
+                            for (int role = 0; role <= 2; role++)
+                            {
+                                int res = _setDownlevel(_factoryDownlevel, pid, 0, role, hString);
+                                if (res == 0) hr = 0;
+                            }
+                            Log(string.Format("SetPersistedDefaultAudioEndpoint (Downlevel): PID={0}, roles 0-2 hr=0x{1:X8}", pid, hr));
+                        }
+                    }
+                    finally
+                    {
+                        if (hString != IntPtr.Zero)
+                        {
+                            Combase.WindowsDeleteString(hString);
+                        }
+                    }
+                }
+                else
+                {
+                    Log("SetApplicationOutputDevice: Delegate or factory is null!");
+                }
+            }
+            catch (Exception ex)
+            {
+                Log(string.Format("SetApplicationOutputDevice Error: PID={0}, {1}", processId, ex.ToString()));
+                hr = Marshal.GetHRForException(ex);
+            }
+            return hr;
+        }
+    }
 }

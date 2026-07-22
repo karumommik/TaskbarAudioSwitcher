@@ -339,8 +339,10 @@ namespace TaskbarAudioSwitcher.UI
 
             ToolStripMenuItem exitItem = new ToolStripMenuItem("Exit", null, (s, e) => {
                 notifyIcon.Visible = false;
-                Application.Exit();
+                try { Environment.Exit(0); }
+                catch { System.Diagnostics.Process.GetCurrentProcess().Kill(); }
             });
+            contextMenu.Items.Add(exitItem);
             notifyIcon.MouseClick += (s, e) => {
                 if (e.Button == MouseButtons.Right) {
                     var dummy = new Form {
@@ -1945,7 +1947,7 @@ namespace TaskbarAudioSwitcher.UI
                     };
                     rowPanel.Controls.Add(nameLabel);
                     
-                    int sliderWidth = rw - (int)(112 * scale) - (int)(46 * scale) - (int)(8 * scale);
+                    int sliderWidth = rw - (int)(112 * scale) - (int)(66 * scale) - (int)(8 * scale);
                     VolumeSlider slider = new VolumeSlider
                     {
                         Location = new Point((int)(112 * scale), (int)(14 * scale)),
@@ -1958,7 +1960,7 @@ namespace TaskbarAudioSwitcher.UI
                     
                     Label volLabel = new Label
                     {
-                        Location = new Point(rw - (int)(46 * scale), (int)(10 * scale)),
+                        Location = new Point(rw - (int)(66 * scale), (int)(10 * scale)),
                         Size = new Size((int)(42 * scale), (int)(16 * scale)),
                         Font = new Font("Segoe UI", 8f * scale),
                         ForeColor = themeTextColor,
@@ -1967,6 +1969,39 @@ namespace TaskbarAudioSwitcher.UI
                         BackColor = themeBgColor
                     };
                     
+                    IconButton btnRoute = new IconButton
+                    {
+                        Location = new Point(rw - (int)(22 * scale), (int)(9 * scale)),
+                        Size = new Size((int)(18 * scale), (int)(18 * scale)),
+                        Glyph = "\uE72D", // curved arrow (Redirect)
+                        ForeColor = themeTextColor,
+                        HoverBgColor = themeHoverBgColor,
+                        ActiveBgColor = Color.Transparent,
+                        IsActive = false,
+                        Font = new Font("Segoe MDL2 Assets", 7.5f * scale),
+                        Enabled = !data.IsSystemSounds && data.ProcessId > 0
+                    };
+                    
+                    if (btnRoute.Enabled)
+                    {
+                        toolTip.SetToolTip(btnRoute, "Route application audio... (Right-click to reset)");
+                        btnRoute.MouseDown += (s, ev) => {
+                            if (ev.Button == MouseButtons.Left)
+                            {
+                                ShowRouteMenu(data.ProcessId, btnRoute, new Point(ev.X, ev.Y));
+                            }
+                            else if (ev.Button == MouseButtons.Right)
+                            {
+                                ResetAppRoute(data.ProcessId);
+                                toolTip.Show("Reset to default output", btnRoute, 1500);
+                            }
+                        };
+                    }
+                    else
+                    {
+                        toolTip.SetToolTip(btnRoute, "Cannot route system sounds");
+                    }
+                    
                     slider.ValueChanged += (s, ev) => {
                         SetSessionVolume(sid, slider.Value);
                         volLabel.Text = string.Format("{0:0}%", slider.Value * 100);
@@ -1974,6 +2009,7 @@ namespace TaskbarAudioSwitcher.UI
                     
                     rowPanel.Controls.Add(slider);
                     rowPanel.Controls.Add(volLabel);
+                    rowPanel.Controls.Add(btnRoute);
 
                     rowPanel.MouseWheel += Form_MouseWheel;
                     slider.MouseWheel += Form_MouseWheel;
@@ -1981,6 +2017,7 @@ namespace TaskbarAudioSwitcher.UI
                     if (iconLabel != null) iconLabel.MouseWheel += Form_MouseWheel;
                     nameLabel.MouseWheel += Form_MouseWheel;
                     volLabel.MouseWheel += Form_MouseWheel;
+                    btnRoute.MouseWheel += Form_MouseWheel;
 
                     pnlMixer.Controls.Add(rowPanel);
                     
@@ -2530,6 +2567,78 @@ namespace TaskbarAudioSwitcher.UI
             {
                 SafeRelease(policyConfigInstance);
             }
+        }
+
+        private void ShowRouteMenu(int processId, IconButton control, Point pos)
+        {
+            var menu = new ContextMenuStrip();
+            menu.Renderer = new ModernToolStripRenderer(isDarkMode);
+
+            string? currentRoutedId = AudioPolicyConfigHelper.GetApplicationOutputDevice((uint)processId);
+
+            IMMDeviceCollection? devices = null;
+            try
+            {
+                int hr = enumerator.EnumAudioEndpoints(0, 1, out devices); // 0 = eRender, 1 = DEVICE_STATE_ACTIVE
+                if (hr == 0 && devices != null)
+                {
+                    uint count = 0;
+                    devices.GetCount(out count);
+
+                    // Add "Default Output" option
+                    var defaultItem = new ToolStripMenuItem("Default Output");
+                    defaultItem.Checked = string.IsNullOrEmpty(currentRoutedId);
+                    defaultItem.Click += (s, ev) =>
+                    {
+                        AudioPolicyConfigHelper.SetApplicationOutputDevice((uint)processId, null);
+                    };
+                    menu.Items.Add(defaultItem);
+                    menu.Items.Add(new ToolStripSeparator());
+
+                    for (uint i = 0; i < count; i++)
+                    {
+                        IMMDevice? dev = null;
+                        if (devices.Item(i, out dev) == 0 && dev != null)
+                        {
+                            string devId;
+                            dev.GetId(out devId);
+
+                            string friendlyName = GetDeviceFriendlyName(dev);
+
+                            var item = new ToolStripMenuItem(friendlyName);
+                            item.Checked = (devId == currentRoutedId);
+                            string targetDeviceId = devId;
+                            item.Click += (s, ev) =>
+                            {
+                                AudioPolicyConfigHelper.SetApplicationOutputDevice((uint)processId, targetDeviceId);
+                            };
+                            menu.Items.Add(item);
+                            SafeRelease(dev);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine("ShowRouteMenu error: " + ex.Message);
+            }
+            finally
+            {
+                SafeRelease(devices);
+            }
+
+            if (menu.Items.Count <= 2) // only default item and separator
+            {
+                menu.Items.Add(new ToolStripMenuItem("No audio outputs found") { Enabled = false });
+            }
+
+            menu.Show(control, pos);
+            Win32.SetForegroundWindow(menu.Handle);
+        }
+
+        private void ResetAppRoute(int processId)
+        {
+            AudioPolicyConfigHelper.SetApplicationOutputDevice((uint)processId, null);
         }
 
         private string GetDeviceFriendlyName(IMMDevice dev)

@@ -8,7 +8,7 @@
   <Identity
     Name="Karumommik.TaskbarAudioSwitcher"
     Publisher="CN=0075F142-D149-4F2C-8074-02EB3F1CD178"
-    Version="3.3.0.0" 
+    Version="3.4.0.0" 
     ProcessorArchitecture="neutral"/>
 
   <Properties>
