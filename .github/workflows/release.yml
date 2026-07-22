@@ -168,4 +168,4 @@ jobs:
           gh release create "$TAG" \
             --title "$TAG" \
             --notes-file notes.md \
-            dist/*.zip dist/*.sha256 dist/*.msixbundle
+            dist/*.zip dist/*.sha256
