@@ -153,30 +153,11 @@ namespace TaskbarAudioSwitcher.UI
             // Initialize COM interfaces
             try
             {
-                string logPath;
-                if (Native.Win32.IsPackaged())
-                {
-                    string dir = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "TaskbarAudioSwitcher");
-                    System.IO.Directory.CreateDirectory(dir);
-                    logPath = System.IO.Path.Combine(dir, "comlog.txt");
-                }
-                else
-                {
-                    logPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "comlog.txt");
-                }
-                
-                System.IO.File.WriteAllText(logPath, "Starting COM init...\n");
                 enumerator = (IMMDeviceEnumerator)new MMDeviceEnumeratorCom();
-                System.IO.File.AppendAllText(logPath, "Enumerator created.\n");
                 policyConfig = (IPolicyConfig)new CPolicyConfigClient();
-                System.IO.File.AppendAllText(logPath, "PolicyConfig created.\n");
             }
             catch (Exception ex)
             {
-                string logPath = Native.Win32.IsPackaged() 
-                    ? System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "TaskbarAudioSwitcher", "comlog.txt") 
-                    : System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "comlog.txt");
-                System.IO.File.AppendAllText(logPath, "ERROR: " + ex.ToString() + "\n");
                 MessageBox.Show("Failed to initialize Windows Audio COM components: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 Application.Exit();
             }
@@ -283,17 +264,7 @@ namespace TaskbarAudioSwitcher.UI
                 Task.Run(() => CheckForUpdatesAsync());
             }
 
-            // Track form closing reason
-            this.FormClosing += (s, e) => {
-                try
-                {
-                    System.IO.File.WriteAllText(
-                        System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "closelog.txt"),
-                        string.Format("Form closing. Reason: {0}\nStack Trace:\n{1}", e.CloseReason, Environment.StackTrace)
-                    );
-                }
-                catch { }
-            };
+
         }
 
         private void InitializeTrayIcon()
@@ -938,13 +909,6 @@ namespace TaskbarAudioSwitcher.UI
             {
                 pnlMixer.Location = new Point(margin, margin);
                 pnlMixer.Size = new Size(totalWidth - margin * 2, Math.Max(10, baseY - margin * 2));
-                try {
-                    System.IO.File.AppendAllText(
-                        System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "mixerlog.txt"),
-                        string.Format("Layout: FormHeight={0}, baseY={1}, pnlMixerLoc={2}, pnlMixerSize={3}, btnMuteLoc={4}, btnMixerLoc={5}\n",
-                            this.Height, baseY, pnlMixer?.Location, pnlMixer?.Size, btnMute?.Location, btnMixer?.Location)
-                    );
-                } catch {}
             }
         }
 
@@ -1116,13 +1080,7 @@ namespace TaskbarAudioSwitcher.UI
                 }
             }
 
-            try {
-                System.IO.File.AppendAllText(
-                    System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "mixerlog.txt"),
-                    string.Format("UpdatePosition: isExpanded={0}, Height={1}, targetLeft={2}, targetTop={3}, currentLeft={4}, currentTop={5}\n",
-                        isExpanded, this.Height, targetLeft, targetTop, this.Left, this.Top)
-                );
-            } catch {}
+
 
             // Update managed bounds first so WinForms doesn't fight back!
             if (this.Left != targetLeft || this.Top != targetTop || this.Width != calculatedWidth)
@@ -1411,13 +1369,11 @@ namespace TaskbarAudioSwitcher.UI
 
             if (isExpanded)
             {
-                try { System.IO.File.WriteAllText(System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "mixerlog.txt"), "--- Mixer Opened ---\n"); } catch {}
                 pnlMixer.Visible = true;
                 RefreshMixerSessions();
             }
             else
             {
-                try { System.IO.File.WriteAllText(System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "mixerlog.txt"), "--- Mixer Closed ---\n"); } catch {}
                 pnlMixer.Visible = false;
                 this.Height = GetCollapsedHeight();
                 UpdateLayout();
@@ -1452,8 +1408,6 @@ namespace TaskbarAudioSwitcher.UI
 
         private void RefreshMixerSessions()
         {
-            try { System.IO.File.AppendAllText(System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "mixerlog.txt"), "--- Refresh Sessions Start ---\n"); } catch {}
-
             IMMDevice? defaultDev = null;
             IAudioSessionManager2? manager = null;
             IAudioSessionEnumerator? sessionEnum = null;
@@ -1543,26 +1497,16 @@ namespace TaskbarAudioSwitcher.UI
                                     SafeRelease(sessionCtrl);
                                 }
                             }
-                            catch (Exception ex)
+                            catch
                             {
                                 SafeRelease(sessionCtrl);
-                                try { System.IO.File.AppendAllText(System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "mixerlog.txt"), "Loop error: " + ex.ToString() + "\n"); } catch {}
                             }
                         }
                     }
                 }
-
-                try
-                {
-                    System.IO.File.AppendAllText(System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "mixerlog.txt"),
-                        string.Format("Summary: hr=0x{0:X8}, Activate hr=0x{1:X8}, count={2}, active={3}\n", 
-                            hr, hrActivate, count, allSessions.Count));
-                }
-                catch {}
             }
-            catch (Exception ex)
+            catch
             {
-                try { System.IO.File.AppendAllText(System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "mixerlog.txt"), "Outer error: " + ex.Message + "\n"); } catch {}
             }
             finally
             {
@@ -2293,9 +2237,8 @@ namespace TaskbarAudioSwitcher.UI
                     }
                 }
             }
-            catch (Exception ex)
+            catch
             {
-                try { System.IO.File.AppendAllText(System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "miclog.txt"), "RefreshMicState Error: " + ex.Message + "\n"); } catch {}
             }
             finally
             {
@@ -2341,9 +2284,8 @@ namespace TaskbarAudioSwitcher.UI
                     }
                 }
             }
-            catch (Exception ex)
+            catch
             {
-                try { System.IO.File.AppendAllText(System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "miclog.txt"), "ToggleMicMute Error: " + ex.Message + "\n"); } catch {}
             }
             finally
             {
@@ -2388,9 +2330,8 @@ namespace TaskbarAudioSwitcher.UI
                     }
                 }
             }
-            catch (Exception ex)
+            catch
             {
-                try { System.IO.File.AppendAllText(System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "miclog.txt"), "AdjustMicVol Error: " + ex.Message + "\n"); } catch {}
             }
             finally
             {
@@ -2451,9 +2392,8 @@ namespace TaskbarAudioSwitcher.UI
                     }
                 }
             }
-            catch (Exception ex)
+            catch
             {
-                try { System.IO.File.AppendAllText(System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "miclog.txt"), "CheckMicUsage Error: " + ex.Message + "\n"); } catch {}
             }
             finally
             {
@@ -2523,9 +2463,8 @@ namespace TaskbarAudioSwitcher.UI
                     }
                 }
             }
-            catch (Exception ex)
+            catch
             {
-                try { System.IO.File.AppendAllText(System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "miclog.txt"), "Menu Error: " + ex.Message + "\n"); } catch {}
             }
             finally
             {
@@ -2559,9 +2498,8 @@ namespace TaskbarAudioSwitcher.UI
                     policyConfigInstance.SetDefaultEndpoint(id, 2); // eCommunications
                 }
             }
-            catch (Exception ex)
+            catch
             {
-                try { System.IO.File.AppendAllText(System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "miclog.txt"), "SetDefaultInput Error: " + ex.Message + "\n"); } catch {}
             }
             finally
             {
@@ -2773,14 +2711,8 @@ namespace TaskbarAudioSwitcher.UI
                     }
                 }
             }
-            catch (Exception ex)
+            catch
             {
-                try {
-                    System.IO.File.AppendAllText(
-                        System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "updaterlog.txt"),
-                        "Update check error: " + ex.Message + "\n"
-                    );
-                } catch {}
             }
         }
 

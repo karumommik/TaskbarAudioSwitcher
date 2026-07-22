@@ -231,12 +231,6 @@ namespace TaskbarAudioSwitcher.Native
 
         private static void Log(string message)
         {
-            try
-            {
-                string path = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "mixerlog.txt");
-                System.IO.File.AppendAllText(path, string.Format("[APCH] {0:yyyy-MM-dd HH:mm:ss} - {1}\n", DateTime.Now, message));
-            }
-            catch {}
         }
 
         private static void Initialize()
