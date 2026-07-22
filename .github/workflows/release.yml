@@ -129,11 +129,15 @@ jobs:
         run: |
           $readme = Get-Content "README.md" -Raw
           $versionHeader = "### v$env:VERSION"
-          $notes = ""
-          if ($readme -match "(?s)$([regex]::Escape($versionHeader))(.*?)(?=### v|\r?\n---|\Z)") {
-              $notes = $matches[2].Trim()
-          } else {
-              $notes = "* Full release build for version $env:VERSION"
+          $notes = "* Release build for version $env:VERSION"
+          $i = $readme.IndexOf($versionHeader)
+          if ($i -ge 0) {
+              $i += $versionHeader.Length
+              $e = $readme.IndexOf("### v", $i)
+              if ($e -lt 0) { $e = $readme.IndexOf("---", $i) }
+              if ($e -gt $i) {
+                  $notes = $readme.Substring($i, $e - $i).Trim()
+              }
           }
 
           $releaseNotes = @"
