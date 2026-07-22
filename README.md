@@ -46,9 +46,6 @@ To ensure 24/7 stability and prevent being flagged by antivirus software, this u
 ## 4. Release History & Changelog
 
 ### v3.4.1 (Current Version)
-* **Removed Debug File Logging:** Completely removed active debug logging calls to `mixerlog.txt`, `miclog.txt`, `comlog.txt`, `closelog.txt`, and `updaterlog.txt`. Eliminates continuous file growth and unnecessary background disk I/O operations during normal operation.
-
-### v3.4.0
 * **Per-Application Audio Routing:** Added a dedicated routing button at the end of each volume mixer row (curved arrow icon). Left-clicking this button opens a context menu of active audio output devices, allowing you to redirect sound output for that specific application. Right-clicking the button instantly resets the application's audio routing back to the system default.
 * **Low-Level COM Function Pointer Interop:** Solved Windows 11 VTable slot shifting (mapping `SetPersistedDefaultAudioEndpoint` to VTable slot 25 and `GetPersistedDefaultAudioEndpoint` to slot 26) and aligned COM delegate signatures to match EarTrumpet specifications (`processId, flow, role, deviceId`). Bypasses CLR COM interface dispatch to prevent memory access violations across all audio roles (`eConsole`, `eMultimedia`, `eCommunications`).
 * **Multi-Process App Routing Broadcast:** Automatically resolves and broadcasts audio policy routing to all running PIDs belonging to multi-process applications (such as Firefox, Spotify, Chrome, Edge), ensuring seamless real-time output switching across child render processes.
