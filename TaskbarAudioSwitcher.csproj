@@ -17,6 +17,6 @@
     <NoWarn>$(NoWarn);WFO1000</NoWarn>
     <Version>3.4.1</Version>
     <Product>Taskbar Audio Switcher</Product>
-    <Company>Erki Lippand</Company>
+    <Company>karumommik</Company>
   </PropertyGroup>
 </Project>
