@@ -10,10 +10,11 @@ namespace TaskbarAudioSwitcher.UI
         private Color themeBgColor;
         private Color themeTextColor;
         private Color themeBorderColor;
-        private Color themeActiveColor = Color.FromArgb(0, 120, 215);
+        private Color themeActiveColor;
 
         public UpdateForm(string currentVersion, string latestVersion, bool isDarkMode)
         {
+            this.themeActiveColor = TaskbarAudioSwitcher.Core.ThemeHelper.GetAccentColor();
             this.Text = "Uuendus saadaval";
             this.Size = new Size(360, 200);
             this.FormBorderStyle = FormBorderStyle.None;

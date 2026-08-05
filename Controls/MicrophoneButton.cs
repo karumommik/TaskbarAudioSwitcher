@@ -33,6 +33,7 @@ namespace TaskbarAudioSwitcher.Controls
         public Color ActiveBgColor { get; set; } = Color.FromArgb(0, 120, 215);
         public Color ActiveFgColor { get; set; } = Color.White;
         public Color HoverBgColor { get; set; } = Color.FromArgb(20, 128, 128, 128);
+        public float WidgetFontSize { get; set; } = 8.0f;
 
         private bool isHovered = false;
 
@@ -150,7 +151,8 @@ namespace TaskbarAudioSwitcher.Controls
             Color textColor = isMuted ? Color.FromArgb(120, outlineColor) : outlineColor;
             using (var brush = new SolidBrush(textColor))
             {
-                using (var textFont = new Font("Segoe UI", 6.2f * scale, FontStyle.Regular))
+                float volFontSize = Math.Max(4.5f, WidgetFontSize - 1.8f) * scale;
+                using (var textFont = new Font("Segoe UI", volFontSize, FontStyle.Regular))
                 {
                     var sfText = new StringFormat
                     {

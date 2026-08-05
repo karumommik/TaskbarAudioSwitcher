@@ -1,4 +1,4 @@
-# Taskbar Audio Switcher (v3.4.1)
+# Taskbar Audio Switcher (v3.5.0)
 
 An extremely lightweight, stable, and convenient Windows 11 utility that automatically places itself on the taskbar (next to the system clock and system tray icons), allowing you to control all computer audio outputs, inputs, and application volumes quickly and comfortably.
 
@@ -45,7 +45,12 @@ To ensure 24/7 stability and prevent being flagged by antivirus software, this u
 
 ## 4. Release History & Changelog
 
-### v3.4.1 (Current Version)
+### v3.5.0 (Current Version)
+* **Widget Font Size Customization:** Added a new setting in `SettingsForm` allowing users to adjust the font size for the taskbar widget text (`6 pt` to `12 pt`, default `8 pt`). All volume percentage labels, device abbreviations, microphone status text, and volume mixer labels dynamically scale based on the selected font size with automated label width calculation.
+* **Windows Theme & Accent Color Integration:** Conforms to Windows taskbar Dark/Light mode (`SystemUsesLightTheme` taskbar detection) and native Windows Accent Colors (`DwmGetColorizationColor` / Explorer Accent Color). Form elements, VolumeSlider fills, active device highlights, update alert buttons, and custom context menu renderers (`ModernToolStripRenderer`) now automatically adopt the user's active Windows Accent Color.
+* **Instant System Theme Reaction:** Listens to Win32 system messages (`WM_SETTINGCHANGE`, `WM_THEMECHANGED`) and `SystemEvents.UserPreferenceChanged` events to update widget themes, accent colors, and renderers immediately without requiring application restart.
+
+### v3.4.1
 * **Per-Application Audio Routing:** Added a dedicated routing button at the end of each volume mixer row (curved arrow icon). Left-clicking this button opens a context menu of active audio output devices, allowing you to redirect sound output for that specific application. Right-clicking the button instantly resets the application's audio routing back to the system default.
 * **Low-Level COM Function Pointer Interop:** Solved Windows 11 VTable slot shifting (mapping `SetPersistedDefaultAudioEndpoint` to VTable slot 25 and `GetPersistedDefaultAudioEndpoint` to slot 26) and aligned COM delegate signatures to match EarTrumpet specifications (`processId, flow, role, deviceId`). Bypasses CLR COM interface dispatch to prevent memory access violations across all audio roles (`eConsole`, `eMultimedia`, `eCommunications`).
 * **Multi-Process App Routing Broadcast:** Automatically resolves and broadcasts audio policy routing to all running PIDs belonging to multi-process applications (such as Firefox, Spotify, Chrome, Edge), ensuring seamless real-time output switching across child render processes.

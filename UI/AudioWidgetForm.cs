@@ -165,8 +165,12 @@ namespace TaskbarAudioSwitcher.UI
             // Create tray icon
             InitializeTrayIcon();
 
-            // Setup Theme Colors
+            // Setup Theme Colors & SystemEvents listener
             UpdateThemeColors();
+            SystemEvents.UserPreferenceChanged += SystemEvents_UserPreferenceChanged;
+            this.FormClosed += (s, e) => {
+                SystemEvents.UserPreferenceChanged -= SystemEvents_UserPreferenceChanged;
+            };
 
             // Create controls
             toolTip = new ToolTip();
@@ -284,7 +288,7 @@ namespace TaskbarAudioSwitcher.UI
 
             // Context Menu
             ContextMenuStrip contextMenu = new ContextMenuStrip();
-            contextMenu.Renderer = new ModernToolStripRenderer(isDarkMode);
+            contextMenu.Renderer = new ModernToolStripRenderer(isDarkMode, themeActiveBgColor);
             
             ToolStripMenuItem titleItem = new ToolStripMenuItem("Taskbar Audio Switcher");
             titleItem.Enabled = false;
@@ -360,7 +364,7 @@ namespace TaskbarAudioSwitcher.UI
             // Allow the tray context menu to completely close and release mouse capture/focus
             await Task.Delay(100);
 
-            using (var form = new SettingsForm(settings, enumerator, isDarkMode))
+            using (var form = new SettingsForm(settings, enumerator, isDarkMode, themeActiveBgColor))
             {
                 if (form.ShowDialog() == DialogResult.OK)
                 {
@@ -374,24 +378,8 @@ namespace TaskbarAudioSwitcher.UI
 
         private void UpdateThemeColors()
         {
-            bool systemDarkMode = true;
-            try
-            {
-                using (var key = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize"))
-                {
-                    if (key != null)
-                    {
-                        var value = key.GetValue("AppsUseLightTheme");
-                        if (value != null)
-                        {
-                            systemDarkMode = (int)value == 0;
-                        }
-                    }
-                }
-            }
-            catch { }
-
-            this.isDarkMode = systemDarkMode;
+            this.isDarkMode = ThemeHelper.IsDarkMode();
+            this.themeActiveBgColor = ThemeHelper.GetAccentColor();
 
             if (isDarkMode)
             {
@@ -423,6 +411,7 @@ namespace TaskbarAudioSwitcher.UI
             if (sliderVolume != null)
             {
                 sliderVolume.BackColor = themeBgColor;
+                sliderVolume.ActiveColor = themeActiveBgColor;
             }
             if (btnDevices != null)
             {
@@ -472,6 +461,33 @@ namespace TaskbarAudioSwitcher.UI
             }
 
             this.Invalidate();
+        }
+
+        private void SystemEvents_UserPreferenceChanged(object sender, UserPreferenceChangedEventArgs e)
+        {
+            if (this.IsHandleCreated && !this.IsDisposed)
+            {
+                try
+                {
+                    this.BeginInvoke(new Action(() => {
+                        UpdateThemeColors();
+                        UpdateLayout();
+                    }));
+                }
+                catch { }
+            }
+        }
+
+        protected override void WndProc(ref Message m)
+        {
+            const int WM_SETTINGCHANGE = 0x001A;
+            const int WM_THEMECHANGED = 0x031E;
+            if (m.Msg == WM_SETTINGCHANGE || m.Msg == WM_THEMECHANGED)
+            {
+                UpdateThemeColors();
+                UpdateLayout();
+            }
+            base.WndProc(ref m);
         }
 
         private void UpdateTimer_Tick(object? sender, EventArgs e)
@@ -797,6 +813,7 @@ namespace TaskbarAudioSwitcher.UI
                     this.Controls.Add(btnMicrophone);
                     UpdateThemeColors();
                 }
+                btnMicrophone.WidgetFontSize = settings.WidgetFontSize;
                 btnMicrophone.Visible = true;
                 btnMicrophone.Size = new Size(btnSize, btnSize);
                 btnMicrophone.Location = new Point(currentX, baseY + margin);
@@ -812,6 +829,7 @@ namespace TaskbarAudioSwitcher.UI
 
             foreach (var btn in btnDevices)
             {
+                btn.WidgetFontSize = settings.WidgetFontSize;
                 if (btn.Visible)
                 {
                     btn.Size = new Size(btnSize, btnSize);
@@ -838,11 +856,13 @@ namespace TaskbarAudioSwitcher.UI
             sliderVolume.Location = new Point(currentX, baseY + (int)(8 * scale));
 
             currentX += sliderW + margin;
-            lblVolumeText.Font = new Font("Segoe UI", 8f * scale, FontStyle.Regular);
-            lblVolumeText.Size = new Size(textW, (int)(16 * scale));
-            lblVolumeText.Location = new Point(currentX, baseY + (int)(10 * scale));
+            lblVolumeText.Font = new Font("Segoe UI", settings.WidgetFontSize * scale, FontStyle.Regular);
+            Size textMeasured = TextRenderer.MeasureText("100%", lblVolumeText.Font);
+            int fontTextW = Math.Max((int)(42 * scale), textMeasured.Width + (int)(4 * scale));
+            lblVolumeText.Size = new Size(fontTextW, (int)(18 * scale));
+            lblVolumeText.Location = new Point(currentX, baseY + (int)(8 * scale));
 
-            currentX += textW + margin;
+            currentX += fontTextW + margin;
 
             // Layout pinned applications controls
             if (pinnedControlsList != null)
@@ -872,13 +892,15 @@ namespace TaskbarAudioSwitcher.UI
                     pinned.Slider.Size = new Size(pinSliderW, (int)(8 * scale));
                     pinned.Slider.Location = new Point(currentX, baseY + (int)(14 * scale));
                     pinned.Slider.BackColor = themeBgColor;
+                    pinned.Slider.ActiveColor = themeActiveBgColor;
                     currentX += pinSliderW + margin;
 
-                    pinned.VolLabel.Font = new Font("Segoe UI", 7.5f * scale, FontStyle.Regular);
-                    pinned.VolLabel.Size = new Size(textW, (int)(16 * scale));
-                    pinned.VolLabel.Location = new Point(currentX, baseY + (int)(10 * scale));
+                    float pinnedFontSize = Math.Max(6.0f, settings.WidgetFontSize - 0.5f);
+                    pinned.VolLabel.Font = new Font("Segoe UI", pinnedFontSize * scale, FontStyle.Regular);
+                    pinned.VolLabel.Size = new Size(fontTextW, (int)(18 * scale));
+                    pinned.VolLabel.Location = new Point(currentX, baseY + (int)(8 * scale));
                     pinned.VolLabel.BackColor = themeBgColor;
-                    currentX += textW + margin;
+                    currentX += fontTextW + margin;
                 }
             }
 
@@ -2409,7 +2431,7 @@ namespace TaskbarAudioSwitcher.UI
         private void ShowMicrophoneContextMenu(Control control, Point pos)
         {
             var menu = new ContextMenuStrip();
-            menu.Renderer = new ModernToolStripRenderer(isDarkMode);
+            menu.Renderer = new ModernToolStripRenderer(isDarkMode, themeActiveBgColor);
 
             IMMDeviceCollection? devices = null;
             IMMDeviceEnumerator? localEnumerator = null;
@@ -2510,7 +2532,7 @@ namespace TaskbarAudioSwitcher.UI
         private void ShowRouteMenu(int processId, IconButton control, Point pos)
         {
             var menu = new ContextMenuStrip();
-            menu.Renderer = new ModernToolStripRenderer(isDarkMode);
+            menu.Renderer = new ModernToolStripRenderer(isDarkMode, themeActiveBgColor);
 
             string? currentRoutedId = AudioPolicyConfigHelper.GetApplicationOutputDevice((uint)processId);
 

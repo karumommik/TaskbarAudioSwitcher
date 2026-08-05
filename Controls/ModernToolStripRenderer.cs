@@ -13,10 +13,13 @@ namespace TaskbarAudioSwitcher.Controls
         private Color hoverColor;
         private Color borderColor;
         private Color separatorColor;
+        private Color accentColor;
 
-        public ModernToolStripRenderer(bool isDarkMode)
+        public ModernToolStripRenderer(bool isDarkMode, Color? accentColor = null)
         {
             this.isDarkMode = isDarkMode;
+            this.accentColor = accentColor ?? Color.FromArgb(0, 120, 215);
+
             if (isDarkMode)
             {
                 bgColor = Color.FromArgb(32, 32, 32);
@@ -92,7 +95,7 @@ namespace TaskbarAudioSwitcher.Controls
             g.SmoothingMode = SmoothingMode.AntiAlias;
 
             var rect = e.ImageRectangle;
-            Color checkColor = Color.FromArgb(0, 120, 215); // Accent blue
+            Color checkColor = accentColor;
 
             using (var pen = new Pen(checkColor, 2f))
             {

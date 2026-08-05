@@ -13,6 +13,7 @@ namespace TaskbarAudioSwitcher.UI
         private AppSettings settings;
         private IMMDeviceEnumerator enumerator;
         private bool isDarkMode;
+        private Color accentColor;
         private float scale;
 
         // UI Controls
@@ -26,6 +27,7 @@ namespace TaskbarAudioSwitcher.UI
         private CheckBox cbShowMicrophone;
         private CheckBox cbMonitorMicrophone;
         private ComboBox cmbScrollStep;
+        private ComboBox cmbWidgetFontSize;
         private Button btnSave;
         private Button btnCancel;
         
@@ -37,11 +39,12 @@ namespace TaskbarAudioSwitcher.UI
         }
         private List<DeviceSettingRow> deviceRows;
 
-        public SettingsForm(AppSettings settings, IMMDeviceEnumerator enumerator, bool isDarkMode)
+        public SettingsForm(AppSettings settings, IMMDeviceEnumerator enumerator, bool isDarkMode, Color? accentColor = null)
         {
             this.settings = settings;
             this.enumerator = enumerator;
             this.isDarkMode = isDarkMode;
+            this.accentColor = accentColor ?? Color.FromArgb(0, 120, 215);
             this.deviceRows = new List<DeviceSettingRow>();
 
             // Calculate DPI Scale factor
@@ -49,7 +52,7 @@ namespace TaskbarAudioSwitcher.UI
 
             // Setup Window
             this.Text = "Settings - Taskbar Audio Switcher";
-            this.Size = new Size((int)(380 * scale), (int)(640 * scale));
+            this.Size = new Size((int)(380 * scale), (int)(670 * scale));
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
             this.MinimizeBox = false;
@@ -257,7 +260,7 @@ namespace TaskbarAudioSwitcher.UI
             Label lblScrollStep = new Label
             {
                 Text = "Scroll volume step:",
-                Location = new Point((int)(20 * scale), (int)(512 * scale)),
+                Location = new Point((int)(20 * scale), (int)(505 * scale)),
                 Size = new Size((int)(170 * scale), (int)(20 * scale)),
                 Font = new Font("Segoe UI", 9f * scale, FontStyle.Bold)
             };
@@ -265,7 +268,7 @@ namespace TaskbarAudioSwitcher.UI
 
             cmbScrollStep = new ComboBox
             {
-                Location = new Point((int)(200 * scale), (int)(510 * scale)),
+                Location = new Point((int)(200 * scale), (int)(503 * scale)),
                 Size = new Size((int)(145 * scale), (int)(24 * scale)),
                 DropDownStyle = ComboBoxStyle.DropDownList,
                 BackColor = controlBg,
@@ -284,13 +287,47 @@ namespace TaskbarAudioSwitcher.UI
             else if (settings.ScrollStep == 10) cmbScrollStep.SelectedIndex = 3;
             else cmbScrollStep.SelectedIndex = 1; // Default 2%
 
+            // Widget Font Size Label & Dropdown
+            Label lblWidgetFontSize = new Label
+            {
+                Text = "Widget font size:",
+                Location = new Point((int)(20 * scale), (int)(540 * scale)),
+                Size = new Size((int)(170 * scale), (int)(20 * scale)),
+                Font = new Font("Segoe UI", 9f * scale, FontStyle.Bold)
+            };
+            this.Controls.Add(lblWidgetFontSize);
+
+            cmbWidgetFontSize = new ComboBox
+            {
+                Location = new Point((int)(200 * scale), (int)(538 * scale)),
+                Size = new Size((int)(145 * scale), (int)(24 * scale)),
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                BackColor = controlBg,
+                ForeColor = textColor,
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 9f * scale)
+            };
+            cmbWidgetFontSize.Items.Add("6 pt (Small)");
+            cmbWidgetFontSize.Items.Add("7 pt");
+            cmbWidgetFontSize.Items.Add("8 pt (Default)");
+            cmbWidgetFontSize.Items.Add("9 pt");
+            cmbWidgetFontSize.Items.Add("10 pt (Large)");
+            cmbWidgetFontSize.Items.Add("11 pt");
+            cmbWidgetFontSize.Items.Add("12 pt (Extra Large)");
+            this.Controls.Add(cmbWidgetFontSize);
+
+            int fsIndex = (int)Math.Round(settings.WidgetFontSize) - 6;
+            if (fsIndex < 0) fsIndex = 2;
+            if (fsIndex >= cmbWidgetFontSize.Items.Count) fsIndex = 2;
+            cmbWidgetFontSize.SelectedIndex = fsIndex;
+
             // Save button
             btnSave = new Button
             {
                 Text = "Save",
-                Location = new Point((int)(155 * scale), (int)(555 * scale)),
+                Location = new Point((int)(155 * scale), (int)(585 * scale)),
                 Size = new Size((int)(90 * scale), (int)(30 * scale)),
-                BackColor = Color.FromArgb(0, 120, 215),
+                BackColor = this.accentColor,
                 ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat,
                 Font = new Font("Segoe UI", 9f * scale, FontStyle.Bold)
@@ -303,7 +340,7 @@ namespace TaskbarAudioSwitcher.UI
             btnCancel = new Button
             {
                 Text = "Cancel",
-                Location = new Point((int)(255 * scale), (int)(555 * scale)),
+                Location = new Point((int)(255 * scale), (int)(585 * scale)),
                 Size = new Size((int)(90 * scale), (int)(30 * scale)),
                 BackColor = btnBg,
                 ForeColor = textColor,
@@ -336,6 +373,8 @@ namespace TaskbarAudioSwitcher.UI
             toolTip.SetToolTip(cbShowScreenMove, "Displays a monitor switch icon on the bar.\nLeft-click: Move utility to the next screen on the right\nRight-click: Move utility to the next screen on the left");
             toolTip.SetToolTip(lblScrollStep, "The volume percentage step when scrolling over icons with the mouse wheel.");
             toolTip.SetToolTip(cmbScrollStep, "The volume percentage step when scrolling over icons with the mouse wheel.");
+            toolTip.SetToolTip(lblWidgetFontSize, "Adjust font size for text, volume percentages, and device abbreviations on the taskbar widget.");
+            toolTip.SetToolTip(cmbWidgetFontSize, "Adjust font size for text, volume percentages, and device abbreviations on the taskbar widget.");
         }
 
         private void PopulateDevices(Color textColor)
@@ -454,6 +493,11 @@ namespace TaskbarAudioSwitcher.UI
             else if (cmbScrollStep.SelectedIndex == 2) settings.ScrollStep = 5;
             else if (cmbScrollStep.SelectedIndex == 3) settings.ScrollStep = 10;
             else settings.ScrollStep = 2; // Default 2%
+
+            if (cmbWidgetFontSize.SelectedIndex >= 0)
+            {
+                settings.WidgetFontSize = (float)(cmbWidgetFontSize.SelectedIndex + 6);
+            }
 
             settings.Save();
             this.DialogResult = DialogResult.OK;

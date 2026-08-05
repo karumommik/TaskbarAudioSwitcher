@@ -18,6 +18,7 @@ namespace TaskbarAudioSwitcher.Core
         public bool ShowScreenMoveButton = false;
         public bool ShowMicrophoneButton = true;
         public bool MonitorMicrophoneState = true;
+        public float WidgetFontSize = 8.0f;
 
         private static string GetFilePath()
         {
@@ -59,6 +60,13 @@ namespace TaskbarAudioSwitcher.Core
                             else if (key == "ShowScreenMoveButton") bool.TryParse(val, out s.ShowScreenMoveButton);
                             else if (key == "ShowMicrophoneButton") bool.TryParse(val, out s.ShowMicrophoneButton);
                             else if (key == "MonitorMicrophoneState") bool.TryParse(val, out s.MonitorMicrophoneState);
+                            else if (key == "WidgetFontSize")
+                            {
+                                if (float.TryParse(val, System.Globalization.CultureInfo.InvariantCulture, out float fVal))
+                                {
+                                    s.WidgetFontSize = Math.Clamp(fVal, 6.0f, 14.0f);
+                                }
+                            }
                         }
                     }
                 }
@@ -85,7 +93,8 @@ namespace TaskbarAudioSwitcher.Core
                     "ScrollStep=" + ScrollStep,
                     "ShowScreenMoveButton=" + ShowScreenMoveButton,
                     "ShowMicrophoneButton=" + ShowMicrophoneButton,
-                    "MonitorMicrophoneState=" + MonitorMicrophoneState
+                    "MonitorMicrophoneState=" + MonitorMicrophoneState,
+                    "WidgetFontSize=" + WidgetFontSize.ToString(System.Globalization.CultureInfo.InvariantCulture)
                 };
                 System.IO.File.WriteAllLines(GetFilePath(), lines.ToArray());
             }

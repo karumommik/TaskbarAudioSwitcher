@@ -14,6 +14,7 @@ namespace TaskbarAudioSwitcher.Controls
         public Color ActiveFgColor { get; set; }
         public Color HoverBgColor { get; set; }
         public string DeviceAbbreviation { get; set; } = string.Empty;
+        public float WidgetFontSize { get; set; } = 8.0f;
 
         private bool isHovered = false;
 
@@ -105,7 +106,8 @@ namespace TaskbarAudioSwitcher.Controls
                         g.DrawString(Glyph, fontToUse, brush, new RectangleF(0, 2 * scale, Width, Height - 12 * scale), sfIcon);
 
                         // Draw 3-letter abbreviation at the bottom
-                        using (var textFont = new Font("Segoe UI", 6.2f * scale, FontStyle.Regular))
+                        float badgeFontSize = Math.Max(4.5f, WidgetFontSize - 1.8f) * scale;
+                        using (var textFont = new Font("Segoe UI", badgeFontSize, FontStyle.Regular))
                         {
                             var sfText = new StringFormat
                             {
