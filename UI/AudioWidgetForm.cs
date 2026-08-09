@@ -19,7 +19,6 @@ namespace TaskbarAudioSwitcher.UI
         
         // UI Controls
         private List<IconButton> btnDevices = new List<IconButton>();
-        private IconButton btnMute = null!;
         private VolumeSlider sliderVolume = null!;
         private Label lblVolumeText = null!;
         private System.Windows.Forms.Timer updateTimer = null!;
@@ -83,6 +82,7 @@ namespace TaskbarAudioSwitcher.UI
 
         // Layout variables
         private int separatorX = 0;
+        private List<int> appSeparatorXs = new List<int>();
         private string[] activeDeviceIds = Array.Empty<string>();
         private string currentDefaultId = string.Empty;
         private string lastDefaultId = string.Empty;
@@ -179,17 +179,6 @@ namespace TaskbarAudioSwitcher.UI
 
             btnDevices = new List<IconButton>();
 
-            btnMute = new IconButton
-            {
-                Glyph = "\uE767",
-                ForeColor = themeTextColor,
-                HoverBgColor = themeHoverBgColor,
-                ActiveBgColor = Color.Transparent,
-                IsActive = false
-            };
-            btnMute.Click += BtnMute_Click;
-            this.Controls.Add(btnMute);
-
             sliderVolume = new VolumeSlider
             {
                 ActiveColor = themeActiveBgColor,
@@ -243,7 +232,6 @@ namespace TaskbarAudioSwitcher.UI
             // Register MouseWheel events
             this.MouseWheel += Form_MouseWheel;
             sliderVolume.MouseWheel += Form_MouseWheel;
-            btnMute.MouseWheel += Form_MouseWheel;
             btnMixer.MouseWheel += Form_MouseWheel;
             btnScreenMove.MouseWheel += Form_MouseWheel;
             pnlMixer.MouseWheel += Form_MouseWheel;
@@ -402,16 +390,11 @@ namespace TaskbarAudioSwitcher.UI
                 lblVolumeText.BackColor = themeBgColor;
                 lblVolumeText.ForeColor = themeTextColor;
             }
-            if (btnMute != null)
-            {
-                btnMute.BackColor = themeBgColor;
-                btnMute.ForeColor = themeTextColor;
-                btnMute.HoverBgColor = themeHoverBgColor;
-            }
             if (sliderVolume != null)
             {
                 sliderVolume.BackColor = themeBgColor;
                 sliderVolume.ActiveColor = themeActiveBgColor;
+                sliderVolume.IsDarkMode = this.isDarkMode;
             }
             if (btnDevices != null)
             {
@@ -455,8 +438,8 @@ namespace TaskbarAudioSwitcher.UI
                 foreach (var pc in pinnedControlsList)
                 {
                     if (pc.IconLabel != null) pc.IconLabel.ForeColor = themeTextColor;
-                    pc.Slider.ActiveColor = themeActiveBgColor;
                     pc.VolLabel.ForeColor = themeTextColor;
+                    pc.Slider.IsDarkMode = this.isDarkMode;
                 }
             }
 
@@ -543,7 +526,21 @@ namespace TaskbarAudioSwitcher.UI
                     }
                 }
             }
-            UpdatePosition();
+
+            bool isAnySettingsFormOpen = false;
+            foreach (Form openForm in Application.OpenForms)
+            {
+                if (openForm is SettingsForm)
+                {
+                    isAnySettingsFormOpen = true;
+                    break;
+                }
+            }
+
+            if (!isAnySettingsFormOpen)
+            {
+                UpdatePosition();
+            }
 
             // Periodic Garbage Collection every 60 seconds (600 ticks * 100ms)
             gcCounter++;
@@ -666,26 +663,11 @@ namespace TaskbarAudioSwitcher.UI
                         {
                             float level;
                             volume.GetMasterVolumeLevelScalar(out level);
-                            bool mute;
-                            volume.GetMute(out mute);
-
                             if (!sliderVolume.IsDragging)
                             {
                                 sliderVolume.UpdateValue(level);
                             }
-
                             lblVolumeText.Text = string.Format("{0:0}%", level * 100);
-
-                            if (mute)
-                            {
-                                btnMute.Glyph = "\uE74F"; // Mute
-                            }
-                            else
-                            {
-                                if (level < 0.33f) btnMute.Glyph = "\uE993"; // Volume low
-                                  else if (level < 0.66f) btnMute.Glyph = "\uE994"; // Volume medium
-                                  else btnMute.Glyph = "\uE767"; // Volume high
-                            }
                         }
                     }
 
@@ -720,7 +702,20 @@ namespace TaskbarAudioSwitcher.UI
                                 ActiveBgColor = themeActiveBgColor,
                                 ActiveFgColor = Color.White
                             };
-                            btn.Click += (s, e) => SwitchDevice(index);
+                            btn.MouseDown += (s, e) => {
+                                int idx = index;
+                                if (e.Button == MouseButtons.Left)
+                                {
+                                    SwitchDevice(idx);
+                                }
+                                else if (e.Button == MouseButtons.Right)
+                                {
+                                    if (idx >= 0 && idx < activeDeviceIds.Length)
+                                    {
+                                        ToggleDeviceMute(activeDeviceIds[idx]);
+                                    }
+                                }
+                            };
                             btn.MouseWheel += Form_MouseWheel;
                             this.Controls.Add(btn);
                             btnDevices.Add(btn);
@@ -735,7 +730,11 @@ namespace TaskbarAudioSwitcher.UI
                                 string name = newNames[i];
                                 btnDevices[i].Visible = true;
                                 btnDevices[i].IsActive = (devId == currentDefaultId);
-                                toolTip.SetToolTip(btnDevices[i], name);
+                                bool isDevMuted = GetDeviceMute(devId);
+                                btnDevices[i].IsMuted = isDevMuted;
+
+                                string muteTip = isDevMuted ? " (Muted - Right-click: Unmute)" : " (Left-click: Select, Right-click: Mute)";
+                                toolTip.SetToolTip(btnDevices[i], name + muteTip);
 
                                 string abbrev = settings.GetDeviceNickname(devId, name);
                                 btnDevices[i].DeviceAbbreviation = abbrev;
@@ -770,6 +769,26 @@ namespace TaskbarAudioSwitcher.UI
                             UpdateLayout();
                         }
                     }
+                    else
+                    {
+                        // Update device mute statuses even when device list hasn't changed
+                        for (int i = 0; i < visibleCount; i++)
+                        {
+                            if (i < activeDeviceIds.Length && i < btnDevices.Count)
+                            {
+                                string devId = activeDeviceIds[i];
+                                string name = newNames[i];
+                                bool isDevMuted = GetDeviceMute(devId);
+                                if (btnDevices[i].IsMuted != isDevMuted)
+                                {
+                                    btnDevices[i].IsMuted = isDevMuted;
+                                    string muteTip = isDevMuted ? " (Muted - Right-click: Unmute)" : " (Left-click: Select, Right-click: Mute)";
+                                    toolTip.SetToolTip(btnDevices[i], name + muteTip);
+                                    btnDevices[i].Invalidate();
+                                }
+                            }
+                        }
+                    }
                 }
             }
             catch { }
@@ -787,14 +806,20 @@ namespace TaskbarAudioSwitcher.UI
             float scale = DpiHelper.GetScale(this.Handle);
             int collapsedH = (int)(36 * scale);
             int btnSize = (int)(28 * scale);
-            int sliderW = (int)(70 * scale);
             int margin = (int)(4 * scale);
             int padding = (int)(8 * scale);
-            int textW = (int)(42 * scale);
+
+            bool isVertical = (settings.SliderOrientation == "Vertical");
+            sliderVolume.Orientation = isVertical ? Orientation.Vertical : Orientation.Horizontal;
+
+            int sliderW = isVertical ? (int)(10 * scale) : (int)(70 * scale);
+            int sliderH = isVertical ? (int)(24 * scale) : (int)(20 * scale);
 
             int baseY = this.Height - collapsedH;
             int currentX = padding;
             int visibleCount = 0;
+
+            appSeparatorXs.Clear();
 
             if (settings.ShowMicrophoneButton)
             {
@@ -848,19 +873,20 @@ namespace TaskbarAudioSwitcher.UI
             separatorX = currentX;
 
             currentX += (int)(1 * scale) + padding;
-            btnMute.Size = new Size(btnSize, btnSize);
-            btnMute.Location = new Point(currentX, baseY + margin);
+            sliderVolume.Size = new Size(sliderW, sliderH);
+            int sliderYOffset = isVertical ? margin : (int)(8 * scale);
+            sliderVolume.Location = new Point(currentX, baseY + sliderYOffset);
 
-            currentX += btnSize + margin;
-            sliderVolume.Size = new Size(sliderW, (int)(20 * scale));
-            sliderVolume.Location = new Point(currentX, baseY + (int)(8 * scale));
-
-            currentX += sliderW + margin;
+            currentX += sliderW + (isVertical ? (int)(2 * scale) : margin);
             lblVolumeText.Font = new Font("Segoe UI", settings.WidgetFontSize * scale, FontStyle.Regular);
             Size textMeasured = TextRenderer.MeasureText("100%", lblVolumeText.Font);
-            int fontTextW = Math.Max((int)(42 * scale), textMeasured.Width + (int)(4 * scale));
+            int fontTextW = isVertical
+                ? Math.Max((int)(34 * scale), textMeasured.Width + (int)(2 * scale))
+                : Math.Max((int)(42 * scale), textMeasured.Width + (int)(4 * scale));
             lblVolumeText.Size = new Size(fontTextW, (int)(18 * scale));
             lblVolumeText.Location = new Point(currentX, baseY + (int)(8 * scale));
+            lblVolumeText.BackColor = themeBgColor;
+            lblVolumeText.ForeColor = themeTextColor;
 
             currentX += fontTextW + margin;
 
@@ -869,38 +895,83 @@ namespace TaskbarAudioSwitcher.UI
             {
                 foreach (var pinned in pinnedControlsList)
                 {
-                    int itemSize = (int)(20 * scale);
-                    int pinSliderW = (int)(60 * scale);
+                    pinned.Slider.Orientation = isVertical ? Orientation.Vertical : Orientation.Horizontal;
 
-                    currentX += margin;
-
-                    if (pinned.IconBox != null)
+                    if (isVertical)
                     {
-                        pinned.IconBox.Size = new Size(itemSize, itemSize);
-                        pinned.IconBox.Location = new Point(currentX, baseY + (int)(8 * scale));
-                        pinned.IconBox.BackColor = themeBgColor;
-                        currentX += itemSize + margin;
+                        // Add separator before pinned app in vertical mode
+                        currentX += (int)(2 * scale);
+                        appSeparatorXs.Add(currentX);
+                        currentX += (int)(6 * scale);
+
+                        int itemSize = (int)(18 * scale);
+                        int pinSliderW = (int)(10 * scale);
+                        int pinSliderH = (int)(24 * scale);
+
+                        if (pinned.IconBox != null)
+                        {
+                            pinned.IconBox.Size = new Size(itemSize, itemSize);
+                            pinned.IconBox.Location = new Point(currentX, baseY + (int)(9 * scale));
+                            pinned.IconBox.BackColor = themeBgColor;
+                            currentX += itemSize + (int)(2 * scale);
+                        }
+                        else if (pinned.IconLabel != null)
+                        {
+                            pinned.IconLabel.Size = new Size(itemSize, itemSize);
+                            pinned.IconLabel.Location = new Point(currentX, baseY + (int)(9 * scale));
+                            pinned.IconLabel.BackColor = themeBgColor;
+                            currentX += itemSize + (int)(2 * scale);
+                        }
+
+                        pinned.Slider.Size = new Size(pinSliderW, pinSliderH);
+                        pinned.Slider.Location = new Point(currentX, baseY + margin);
+                        pinned.Slider.BackColor = themeBgColor;
+                        currentX += pinSliderW + (int)(2 * scale);
+
+                        float pinnedFontSize = Math.Max(6.0f, settings.WidgetFontSize - 0.5f);
+                        pinned.VolLabel.Font = new Font("Segoe UI", pinnedFontSize * scale, FontStyle.Regular);
+                        Size pTextMeasured = TextRenderer.MeasureText("100%", pinned.VolLabel.Font);
+                        int pFontTextW = Math.Max((int)(34 * scale), pTextMeasured.Width + (int)(2 * scale));
+                        pinned.VolLabel.Size = new Size(pFontTextW, (int)(18 * scale));
+                        pinned.VolLabel.Location = new Point(currentX, baseY + (int)(9 * scale));
+                        pinned.VolLabel.BackColor = themeBgColor;
+                        currentX += pFontTextW + margin;
                     }
-                    else if (pinned.IconLabel != null)
+                    else
                     {
-                        pinned.IconLabel.Size = new Size(itemSize, itemSize);
-                        pinned.IconLabel.Location = new Point(currentX, baseY + (int)(8 * scale));
-                        pinned.IconLabel.BackColor = themeBgColor;
-                        currentX += itemSize + margin;
+                        int itemSize = (int)(20 * scale);
+                        int pinSliderW = (int)(60 * scale);
+
+                        currentX += margin;
+
+                        if (pinned.IconBox != null)
+                        {
+                            pinned.IconBox.Size = new Size(itemSize, itemSize);
+                            pinned.IconBox.Location = new Point(currentX, baseY + (int)(8 * scale));
+                            pinned.IconBox.BackColor = themeBgColor;
+                            currentX += itemSize + margin;
+                        }
+                        else if (pinned.IconLabel != null)
+                        {
+                            pinned.IconLabel.Size = new Size(itemSize, itemSize);
+                            pinned.IconLabel.Location = new Point(currentX, baseY + (int)(8 * scale));
+                            pinned.IconLabel.BackColor = themeBgColor;
+                            currentX += itemSize + margin;
+                        }
+
+                        pinned.Slider.Size = new Size(pinSliderW, (int)(8 * scale));
+                        pinned.Slider.Location = new Point(currentX, baseY + (int)(14 * scale));
+                        pinned.Slider.BackColor = themeBgColor;
+                        pinned.Slider.ActiveColor = themeActiveBgColor;
+                        currentX += pinSliderW + margin;
+
+                        float pinnedFontSize = Math.Max(6.0f, settings.WidgetFontSize - 0.5f);
+                        pinned.VolLabel.Font = new Font("Segoe UI", pinnedFontSize * scale, FontStyle.Regular);
+                        pinned.VolLabel.Size = new Size(fontTextW, (int)(18 * scale));
+                        pinned.VolLabel.Location = new Point(currentX, baseY + (int)(8 * scale));
+                        pinned.VolLabel.BackColor = themeBgColor;
+                        currentX += fontTextW + margin;
                     }
-
-                    pinned.Slider.Size = new Size(pinSliderW, (int)(8 * scale));
-                    pinned.Slider.Location = new Point(currentX, baseY + (int)(14 * scale));
-                    pinned.Slider.BackColor = themeBgColor;
-                    pinned.Slider.ActiveColor = themeActiveBgColor;
-                    currentX += pinSliderW + margin;
-
-                    float pinnedFontSize = Math.Max(6.0f, settings.WidgetFontSize - 0.5f);
-                    pinned.VolLabel.Font = new Font("Segoe UI", pinnedFontSize * scale, FontStyle.Regular);
-                    pinned.VolLabel.Size = new Size(fontTextW, (int)(18 * scale));
-                    pinned.VolLabel.Location = new Point(currentX, baseY + (int)(8 * scale));
-                    pinned.VolLabel.BackColor = themeBgColor;
-                    currentX += fontTextW + margin;
                 }
             }
 
@@ -1170,36 +1241,67 @@ namespace TaskbarAudioSwitcher.UI
             }
         }
 
-        private void BtnMute_Click(object? sender, EventArgs e)
+        private bool GetDeviceMute(string deviceId)
         {
-            IMMDevice? defaultDev = null;
-            object? volumeObj = null;
-            IAudioEndpointVolume? volume = null;
+            IMMDevice? dev = null;
+            IAudioEndpointVolume? vol = null;
+            object? volObj = null;
             try
             {
-                int hr = enumerator.GetDefaultAudioEndpoint(0, 0, out defaultDev);
-                if (hr == 0 && defaultDev != null)
+                int hr = enumerator.GetDevice(deviceId, out dev);
+                if (hr == 0 && dev != null)
                 {
                     Guid iid = new Guid("5CDF2C82-841E-4546-9722-0CF74078229A");
-                    defaultDev.Activate(ref iid, 1, IntPtr.Zero, out volumeObj);
-                    volume = volumeObj as IAudioEndpointVolume;
-                    if (volume != null)
+                    hr = dev.Activate(ref iid, 1, IntPtr.Zero, out volObj);
+                    vol = volObj as IAudioEndpointVolume;
+                    if (hr == 0 && vol != null)
                     {
-                        bool currentMute;
-                        volume.GetMute(out currentMute);
-                        Guid eventContext = Guid.Empty;
-                        volume.SetMute(!currentMute, ref eventContext);
-                        RefreshAudioState();
+                        bool isMuted;
+                        vol.GetMute(out isMuted);
+                        return isMuted;
                     }
                 }
             }
             catch { }
             finally
             {
-                SafeRelease(volume);
-                SafeRelease(volumeObj);
-                SafeRelease(defaultDev);
+                SafeRelease(volObj);
+                SafeRelease(vol);
+                SafeRelease(dev);
             }
+            return false;
+        }
+
+        private void ToggleDeviceMute(string deviceId)
+        {
+            IMMDevice? dev = null;
+            IAudioEndpointVolume? vol = null;
+            object? volObj = null;
+            try
+            {
+                int hr = enumerator.GetDevice(deviceId, out dev);
+                if (hr == 0 && dev != null)
+                {
+                    Guid iid = new Guid("5CDF2C82-841E-4546-9722-0CF74078229A");
+                    hr = dev.Activate(ref iid, 1, IntPtr.Zero, out volObj);
+                    vol = volObj as IAudioEndpointVolume;
+                    if (hr == 0 && vol != null)
+                    {
+                        bool currentMute;
+                        vol.GetMute(out currentMute);
+                        Guid eventContext = Guid.Empty;
+                        vol.SetMute(!currentMute, ref eventContext);
+                    }
+                }
+            }
+            catch { }
+            finally
+            {
+                SafeRelease(volObj);
+                SafeRelease(vol);
+                SafeRelease(dev);
+            }
+            RefreshAudioState();
         }
 
         private void Form_MouseWheel(object? sender, MouseEventArgs e)
@@ -1208,6 +1310,7 @@ namespace TaskbarAudioSwitcher.UI
             if (hme != null && hme.Handled) return;
 
             Control? senderControl = sender as Control;
+            Point mousePos = this.PointToClient(Cursor.Position);
 
             if (senderControl == btnMicrophone)
             {
@@ -1217,14 +1320,18 @@ namespace TaskbarAudioSwitcher.UI
             }
 
             PinnedAppControls? matchedPinned = null;
-            if (senderControl != null && pinnedControlsList != null)
+            if (pinnedControlsList != null)
             {
                 foreach (var pc in pinnedControlsList)
                 {
                     if (senderControl == pc.Slider ||
                         senderControl == pc.IconBox ||
                         senderControl == pc.IconLabel ||
-                        senderControl == pc.VolLabel)
+                        senderControl == pc.VolLabel ||
+                        (pc.Slider != null && pc.Slider.Bounds.Contains(mousePos)) ||
+                        (pc.IconBox != null && pc.IconBox.Bounds.Contains(mousePos)) ||
+                        (pc.IconLabel != null && pc.IconLabel.Bounds.Contains(mousePos)) ||
+                        (pc.VolLabel != null && pc.VolLabel.Bounds.Contains(mousePos)))
                     {
                         matchedPinned = pc;
                         break;
@@ -1232,7 +1339,7 @@ namespace TaskbarAudioSwitcher.UI
                 }
             }
 
-            if (matchedPinned != null)
+            if (matchedPinned != null && matchedPinned.Slider != null)
             {
                 float currentVal = matchedPinned.Slider.Value;
                 float step = (e.Delta > 0) ? (settings.ScrollStep / 100f) : -(settings.ScrollStep / 100f);
@@ -1240,7 +1347,10 @@ namespace TaskbarAudioSwitcher.UI
 
                 SetSessionVolume(matchedPinned.SessionId, newVal);
                 matchedPinned.Slider.UpdateValue(newVal);
-                matchedPinned.VolLabel.Text = string.Format("{0:0}%", newVal * 100);
+                if (matchedPinned.VolLabel != null)
+                {
+                    matchedPinned.VolLabel.Text = string.Format("{0:0}%", newVal * 100);
+                }
 
                 if (hme != null)
                 {
@@ -1250,8 +1360,9 @@ namespace TaskbarAudioSwitcher.UI
             }
 
             MixerRow? matchedRow = null;
-            if (senderControl != null && isExpanded)
+            if (isExpanded && pnlMixer != null)
             {
+                Point mixerMousePos = pnlMixer.PointToClient(Cursor.Position);
                 foreach (var row in mixerRows)
                 {
                     if (senderControl == row.RowPanel || 
@@ -1259,7 +1370,8 @@ namespace TaskbarAudioSwitcher.UI
                         senderControl == row.IconBox || 
                         senderControl == row.IconLabel || 
                         senderControl == row.NameLabel || 
-                        senderControl == row.VolLabel)
+                        senderControl == row.VolLabel ||
+                        (row.RowPanel != null && row.RowPanel.Bounds.Contains(mixerMousePos)))
                     {
                         matchedRow = row;
                         break;
@@ -1706,10 +1818,12 @@ namespace TaskbarAudioSwitcher.UI
                         this.Controls.Add(iconLabel);
                     }
 
+                    Color dominantColor = ThemeHelper.GetDominantColor(data.Icon?.ToBitmap(), themeActiveBgColor);
                     VolumeSlider slider = new VolumeSlider
                     {
-                        ActiveColor = themeActiveBgColor,
+                        ActiveColor = dominantColor,
                         InactiveColor = Color.FromArgb(80, 128, 128, 128),
+                        IsDarkMode = ThemeHelper.IsDarkMode(),
                         BackColor = themeBgColor
                     };
                     slider.UpdateValue(data.Volume);
@@ -1761,6 +1875,7 @@ namespace TaskbarAudioSwitcher.UI
                 }
                 else
                 {
+                    pc.Slider.ActiveColor = ThemeHelper.GetDominantColor(data.Icon?.ToBitmap(), themeActiveBgColor);
                     if (!pc.Slider.IsDragging)
                     {
                         pc.Slider.UpdateValue(data.Volume);
@@ -1914,12 +2029,14 @@ namespace TaskbarAudioSwitcher.UI
                     rowPanel.Controls.Add(nameLabel);
                     
                     int sliderWidth = rw - (int)(112 * scale) - (int)(66 * scale) - (int)(8 * scale);
+                    Color appDominantColor = ThemeHelper.GetDominantColor(data.Icon?.ToBitmap(), themeActiveBgColor);
                     VolumeSlider slider = new VolumeSlider
                     {
                         Location = new Point((int)(112 * scale), (int)(14 * scale)),
                         Size = new Size(sliderWidth, (int)(8 * scale)),
-                        ActiveColor = themeActiveBgColor,
+                        ActiveColor = appDominantColor,
                         InactiveColor = Color.FromArgb(80, 128, 128, 128),
+                        IsDarkMode = ThemeHelper.IsDarkMode(),
                         BackColor = themeBgColor
                     };
                     slider.UpdateValue(data.Volume);
@@ -2138,11 +2255,24 @@ namespace TaskbarAudioSwitcher.UI
                 }
             }
 
+            Color linePenColor = !ThemeHelper.IsDarkMode() ? Color.FromArgb(170, 170, 170) : themeBorderColor;
+
             if (separatorX > 0)
             {
-                using (var pen = new Pen(themeBorderColor, 1f))
+                using (var pen = new Pen(linePenColor, 1f))
                 {
                     g.DrawLine(pen, separatorX, baseY + 8, separatorX, baseY + 28);
+                }
+            }
+
+            if (appSeparatorXs != null && appSeparatorXs.Count > 0)
+            {
+                using (var pen = new Pen(linePenColor, 1f))
+                {
+                    foreach (int sepX in appSeparatorXs)
+                    {
+                        g.DrawLine(pen, sepX, baseY + 8, sepX, baseY + 28);
+                    }
                 }
             }
         }

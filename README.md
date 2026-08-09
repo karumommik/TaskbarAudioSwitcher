@@ -1,4 +1,4 @@
-# Taskbar Audio Switcher (v3.5.0)
+# Taskbar Audio Switcher (v3.6.0)
 
 An extremely lightweight, stable, and convenient Windows 11 utility that automatically places itself on the taskbar (next to the system clock and system tray icons), allowing you to control all computer audio outputs, inputs, and application volumes quickly and comfortably.
 
@@ -12,8 +12,8 @@ An extremely lightweight, stable, and convenient Windows 11 utility that automat
 
 1. **Dynamic Audio Device Switching:** Easily cycle between audio outputs (e.g., Speakers, Headphones, HDMI) directly from your taskbar. Active icons display custom 3-letter nicknames or system abbreviations underneath. Supports unlimited output devices.
 2. **Microphone Control:** Dedicated microphone button supporting system-wide mute toggle with visual indicators, input device context-menu switching, and active recording monitoring (highlights red when any application is actively using the microphone).
-3. **Volume Regulation & Step Customization:** Drag the master slider or scroll your mouse wheel anywhere over the utility bar to adjust the volume. Customize scroll step sizes (1%, 2%, 5%, or 10%).
-4. **App Volume Mixer:** Expand a dynamic, lightweight application volume mixer right above the taskbar. Includes mouse-wheel volume routing for individual apps and an option to hide silent background audio sessions.
+3. **Volume Regulation & Step Customization:** Drag the master slider or scroll your mouse wheel anywhere over the utility bar to adjust the volume. Customize scroll step sizes (1%, 2%, 5%, or 10%). Supports horizontal sliders and space-saving vertical volume bars.
+4. **App Volume Mixer & Taskbar Pinning:** Expand a dynamic, lightweight application volume mixer right above the taskbar, pin application sliders directly to the taskbar, route app audio output, and hide silent sessions.
 5. **Quick Monitor Switcher Button:** Shift the utility across screens. Left-click moves the widget to the next monitor to the right; right-click moves it to the next monitor to the left.
 6. **High-DPI Per-Monitor Awareness:** Scales dynamically to look razor-sharp on high-resolution monitors (e.g., 100%, 125%, 150%, 200% scaling factors).
 7. **System Tray Integration:** A flat, themed context menu (supporting Dark/Light mode) allows adjusting manual device filters, nicknames, startup settings, and alignments.
@@ -45,7 +45,15 @@ To ensure 24/7 stability and prevent being flagged by antivirus software, this u
 
 ## 4. Release History & Changelog
 
-### v3.5.0 (Current Version)
+### v3.6.0 (Current Version)
+* **Vertical Volume Slider & Compact Layout Mode:** Configurable `Volume slider style:` setting in `SettingsForm` (`Horizontal (Default)` vs `Vertical (Compact)`). In vertical mode, master and application volume levels are rendered as compact vertical columns without thumb knobs, reducing taskbar horizontal footprint by over 50%.
+* **Right-Click Output Device Mute Toggle:** Right-clicking on any audio output device button on the taskbar instantly toggles Mute/Unmute for that device (including inactive output devices). Active muted devices render a sleek red diagonal slash (`IsMuted`) across the icon for instant visual recognition.
+* **Space-Saving Widget Layout:** Removed the dedicated Mute button (`btnMute`), placing the main volume bar and percentage label immediately after output device selection buttons and vertical separator lines, maximizing taskbar space efficiency.
+* **App Icon Dominant Accent Color Extraction:** Added `ThemeHelper.GetDominantColor` to dynamically extract the most vibrant accent color from each application's icon. Pinned application sliders and volume mixer rows automatically adopt their app's signature brand color (e.g. Spotify Green, Firefox Orange, Discord Blurple).
+* **Light Mode High-Contrast Rendering:** Enhanced Light Theme rendering across all custom controls (`VolumeSlider`, `IconButton`, `MicrophoneButton`). Slider tracks feature crisp 1px outline borders and high-contrast background fills, ensuring 100% legibility and visibility on light taskbars and backgrounds.
+* **Scroll Step Hit-Testing & Settings Fixes:** Resolved ComboBox dropdown auto-close behavior in `SettingsForm` by bypassing topmost Z-order resets while settings are open. Mouse wheel spatial hit-testing ensures configured scroll steps (`ScrollStep`: 1%, 2%, 5%, 10%) apply consistently to master volume, pinned app sliders, and mixer rows.
+
+### v3.5.0
 * **Widget Font Size Customization:** Added a new setting in `SettingsForm` allowing users to adjust the font size for the taskbar widget text (`6 pt` to `12 pt`, default `8 pt`). All volume percentage labels, device abbreviations, microphone status text, and volume mixer labels dynamically scale based on the selected font size with automated label width calculation.
 * **Windows Theme & Accent Color Integration:** Conforms to Windows taskbar Dark/Light mode (`SystemUsesLightTheme` taskbar detection) and native Windows Accent Colors (`DwmGetColorizationColor` / Explorer Accent Color). Form elements, VolumeSlider fills, active device highlights, update alert buttons, and custom context menu renderers (`ModernToolStripRenderer`) now automatically adopt the user's active Windows Accent Color.
 * **Instant System Theme Reaction:** Listens to Win32 system messages (`WM_SETTINGCHANGE`, `WM_THEMECHANGED`) and `SystemEvents.UserPreferenceChanged` events to update widget themes, accent colors, and renderers immediately without requiring application restart.

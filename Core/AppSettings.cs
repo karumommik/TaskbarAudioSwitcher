@@ -19,6 +19,7 @@ namespace TaskbarAudioSwitcher.Core
         public bool ShowMicrophoneButton = true;
         public bool MonitorMicrophoneState = true;
         public float WidgetFontSize = 8.0f;
+        public string SliderOrientation = "Horizontal";
 
         private static string GetFilePath()
         {
@@ -67,6 +68,7 @@ namespace TaskbarAudioSwitcher.Core
                                     s.WidgetFontSize = Math.Clamp(fVal, 6.0f, 14.0f);
                                 }
                             }
+                            else if (key == "SliderOrientation") s.SliderOrientation = val;
                         }
                     }
                 }
@@ -94,7 +96,8 @@ namespace TaskbarAudioSwitcher.Core
                     "ShowScreenMoveButton=" + ShowScreenMoveButton,
                     "ShowMicrophoneButton=" + ShowMicrophoneButton,
                     "MonitorMicrophoneState=" + MonitorMicrophoneState,
-                    "WidgetFontSize=" + WidgetFontSize.ToString(System.Globalization.CultureInfo.InvariantCulture)
+                    "WidgetFontSize=" + WidgetFontSize.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                    "SliderOrientation=" + SliderOrientation
                 };
                 System.IO.File.WriteAllLines(GetFilePath(), lines.ToArray());
             }

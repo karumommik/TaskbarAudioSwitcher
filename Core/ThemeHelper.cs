@@ -98,5 +98,55 @@ namespace TaskbarAudioSwitcher.Core
             // Default Windows Accent Blue (#0078D7)
             return Color.FromArgb(0, 120, 215);
         }
+
+        /// <summary>
+        /// Extracts the most dominant vibrant color from an image/icon bitmap.
+        /// Falls back to defaultAccent if no vibrant color is found.
+        /// </summary>
+        public static Color GetDominantColor(Image? image, Color defaultAccent)
+        {
+            if (image == null) return defaultAccent;
+
+            try
+            {
+                using (Bitmap bmp = new Bitmap(image, new Size(24, 24)))
+                {
+                    int count = 0;
+                    float maxSat = 0f;
+                    Color bestColor = defaultAccent;
+
+                    for (int y = 0; y < bmp.Height; y++)
+                    {
+                        for (int x = 0; x < bmp.Width; x++)
+                        {
+                            Color pixel = bmp.GetPixel(x, y);
+                            if (pixel.A < 160) continue; // Ignore transparent/semi-transparent pixels
+
+                            float sat = pixel.GetSaturation();
+                            float bri = pixel.GetBrightness();
+
+                            // Filter out near-black, near-white, and low-saturation pixels
+                            if (sat > 0.18f && bri > 0.15f && bri < 0.92f)
+                            {
+                                if (sat > maxSat)
+                                {
+                                    maxSat = sat;
+                                    bestColor = pixel;
+                                }
+                                count++;
+                            }
+                        }
+                    }
+
+                    if (count > 0 && maxSat > 0.18f)
+                    {
+                        return Color.FromArgb(255, bestColor.R, bestColor.G, bestColor.B);
+                    }
+                }
+            }
+            catch { }
+
+            return defaultAccent;
+        }
     }
 }

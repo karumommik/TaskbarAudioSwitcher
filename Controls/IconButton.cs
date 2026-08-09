@@ -16,6 +16,20 @@ namespace TaskbarAudioSwitcher.Controls
         public string DeviceAbbreviation { get; set; } = string.Empty;
         public float WidgetFontSize { get; set; } = 8.0f;
 
+        private bool isMuted = false;
+        public bool IsMuted
+        {
+            get => isMuted;
+            set
+            {
+                if (isMuted != value)
+                {
+                    isMuted = value;
+                    Invalidate();
+                }
+            }
+        }
+
         private bool isHovered = false;
 
         public IconButton()
@@ -117,6 +131,16 @@ namespace TaskbarAudioSwitcher.Controls
                             g.DrawString(DeviceAbbreviation, textFont, brush, new RectangleF(0, 15 * scale, Width, 13 * scale), sfText);
                         }
                     }
+                }
+            }
+
+            if (IsMuted)
+            {
+                using (var pen = new Pen(Color.FromArgb(232, 17, 35), Math.Max(2f, 2f * scale)))
+                {
+                    pen.StartCap = LineCap.Round;
+                    pen.EndCap = LineCap.Round;
+                    g.DrawLine(pen, (int)(5 * scale), (int)(5 * scale), Width - (int)(6 * scale), Height - (int)(6 * scale));
                 }
             }
         }

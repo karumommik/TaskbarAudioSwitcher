@@ -28,6 +28,7 @@ namespace TaskbarAudioSwitcher.UI
         private CheckBox cbMonitorMicrophone;
         private ComboBox cmbScrollStep;
         private ComboBox cmbWidgetFontSize;
+        private ComboBox cmbSliderOrientation;
         private Button btnSave;
         private Button btnCancel;
         
@@ -52,7 +53,7 @@ namespace TaskbarAudioSwitcher.UI
 
             // Setup Window
             this.Text = "Settings - Taskbar Audio Switcher";
-            this.Size = new Size((int)(380 * scale), (int)(670 * scale));
+            this.Size = new Size((int)(380 * scale), (int)(710 * scale));
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
             this.MinimizeBox = false;
@@ -321,11 +322,40 @@ namespace TaskbarAudioSwitcher.UI
             if (fsIndex >= cmbWidgetFontSize.Items.Count) fsIndex = 2;
             cmbWidgetFontSize.SelectedIndex = fsIndex;
 
+            // Slider Orientation Label & Dropdown
+            Label lblSliderOrientation = new Label
+            {
+                Text = "Volume slider style:",
+                Location = new Point((int)(20 * scale), (int)(575 * scale)),
+                Size = new Size((int)(170 * scale), (int)(20 * scale)),
+                Font = new Font("Segoe UI", 9f * scale, FontStyle.Bold)
+            };
+            this.Controls.Add(lblSliderOrientation);
+
+            cmbSliderOrientation = new ComboBox
+            {
+                Location = new Point((int)(200 * scale), (int)(573 * scale)),
+                Size = new Size((int)(145 * scale), (int)(24 * scale)),
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                BackColor = controlBg,
+                ForeColor = textColor,
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 9f * scale)
+            };
+            cmbSliderOrientation.Items.Add("Horizontal (Default)");
+            cmbSliderOrientation.Items.Add("Vertical (Compact)");
+            this.Controls.Add(cmbSliderOrientation);
+
+            if (settings.SliderOrientation == "Vertical")
+                cmbSliderOrientation.SelectedIndex = 1;
+            else
+                cmbSliderOrientation.SelectedIndex = 0;
+
             // Save button
             btnSave = new Button
             {
                 Text = "Save",
-                Location = new Point((int)(155 * scale), (int)(585 * scale)),
+                Location = new Point((int)(155 * scale), (int)(620 * scale)),
                 Size = new Size((int)(90 * scale), (int)(30 * scale)),
                 BackColor = this.accentColor,
                 ForeColor = Color.White,
@@ -340,7 +370,7 @@ namespace TaskbarAudioSwitcher.UI
             btnCancel = new Button
             {
                 Text = "Cancel",
-                Location = new Point((int)(255 * scale), (int)(585 * scale)),
+                Location = new Point((int)(255 * scale), (int)(620 * scale)),
                 Size = new Size((int)(90 * scale), (int)(30 * scale)),
                 BackColor = btnBg,
                 ForeColor = textColor,
@@ -375,6 +405,8 @@ namespace TaskbarAudioSwitcher.UI
             toolTip.SetToolTip(cmbScrollStep, "The volume percentage step when scrolling over icons with the mouse wheel.");
             toolTip.SetToolTip(lblWidgetFontSize, "Adjust font size for text, volume percentages, and device abbreviations on the taskbar widget.");
             toolTip.SetToolTip(cmbWidgetFontSize, "Adjust font size for text, volume percentages, and device abbreviations on the taskbar widget.");
+            toolTip.SetToolTip(lblSliderOrientation, "Select between horizontal sliders or space-saving compact vertical volume bars.");
+            toolTip.SetToolTip(cmbSliderOrientation, "Select between horizontal sliders or space-saving compact vertical volume bars.");
         }
 
         private void PopulateDevices(Color textColor)
@@ -498,6 +530,8 @@ namespace TaskbarAudioSwitcher.UI
             {
                 settings.WidgetFontSize = (float)(cmbWidgetFontSize.SelectedIndex + 6);
             }
+
+            settings.SliderOrientation = cmbSliderOrientation.SelectedIndex == 1 ? "Vertical" : "Horizontal";
 
             settings.Save();
             this.DialogResult = DialogResult.OK;
