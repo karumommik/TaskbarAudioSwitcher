@@ -3,8 +3,8 @@
 An extremely lightweight, stable, and convenient Windows 11 utility that automatically places itself on the taskbar (next to the system clock and system tray icons), allowing you to control all computer audio outputs, inputs, and application volumes quickly and comfortably.
 
 ### Preview
-![Taskbar Widget](TAS1.png)  
-![Expanded Mixer Panel](TAS2.png)
+![Taskbar Widget](TASscreen1.png)  
+![Expanded Mixer Panel](TASscreen2.png)
 
 ---
 
