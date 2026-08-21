@@ -18,6 +18,8 @@ namespace TaskbarAudioSwitcher.Core
         public bool ShowScreenMoveButton = false;
         public bool ShowMicrophoneButton = true;
         public bool MonitorMicrophoneState = true;
+        public bool ShowVolumePercentage = true;
+        public bool ShowAppVolumePercentage = true;
         public float WidgetFontSize = 8.0f;
         public string SliderOrientation = "Horizontal";
 
@@ -61,6 +63,8 @@ namespace TaskbarAudioSwitcher.Core
                             else if (key == "ShowScreenMoveButton") bool.TryParse(val, out s.ShowScreenMoveButton);
                             else if (key == "ShowMicrophoneButton") bool.TryParse(val, out s.ShowMicrophoneButton);
                             else if (key == "MonitorMicrophoneState") bool.TryParse(val, out s.MonitorMicrophoneState);
+                            else if (key == "ShowVolumePercentage") bool.TryParse(val, out s.ShowVolumePercentage);
+                            else if (key == "ShowAppVolumePercentage") bool.TryParse(val, out s.ShowAppVolumePercentage);
                             else if (key == "WidgetFontSize")
                             {
                                 if (float.TryParse(val, System.Globalization.CultureInfo.InvariantCulture, out float fVal))
@@ -96,6 +100,8 @@ namespace TaskbarAudioSwitcher.Core
                     "ShowScreenMoveButton=" + ShowScreenMoveButton,
                     "ShowMicrophoneButton=" + ShowMicrophoneButton,
                     "MonitorMicrophoneState=" + MonitorMicrophoneState,
+                    "ShowVolumePercentage=" + ShowVolumePercentage,
+                    "ShowAppVolumePercentage=" + ShowAppVolumePercentage,
                     "WidgetFontSize=" + WidgetFontSize.ToString(System.Globalization.CultureInfo.InvariantCulture),
                     "SliderOrientation=" + SliderOrientation
                 };

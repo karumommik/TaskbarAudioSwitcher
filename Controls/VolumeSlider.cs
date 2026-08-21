@@ -41,6 +41,20 @@ namespace TaskbarAudioSwitcher.Controls
         public Color InactiveColor { get; set; }
         public Orientation Orientation { get; set; } = Orientation.Horizontal;
 
+        private bool isMuted = false;
+        public bool IsMuted
+        {
+            get => isMuted;
+            set
+            {
+                if (isMuted != value)
+                {
+                    isMuted = value;
+                    Invalidate();
+                }
+            }
+        }
+
         private bool isDarkMode = true;
         public bool IsDarkMode
         {
@@ -88,14 +102,17 @@ namespace TaskbarAudioSwitcher.Controls
                     g.FillRoundRectangle(brush, x, yMargin, trackWidth, h, cornerRadius);
                 }
 
-                // Active track (rising filled volume level column)
-                int activeHeight = (int)(h * value);
-                if (activeHeight > 0)
+                // Active track (rising filled volume level column) - only drawn if NOT muted
+                if (!IsMuted)
                 {
-                    int activeY = yMargin + (h - activeHeight);
-                    using (var brush = new SolidBrush(ActiveColor))
+                    int activeHeight = (int)(h * value);
+                    if (activeHeight > 0)
                     {
-                        g.FillRoundRectangle(brush, x, activeY, trackWidth, activeHeight, cornerRadius);
+                        int activeY = yMargin + (h - activeHeight);
+                        using (var brush = new SolidBrush(ActiveColor))
+                        {
+                            g.FillRoundRectangle(brush, x, activeY, trackWidth, activeHeight, cornerRadius);
+                        }
                     }
                 }
 
@@ -121,9 +138,9 @@ namespace TaskbarAudioSwitcher.Controls
                     g.FillRoundRectangle(brush, x, y, w, trackHeight, (int)(2 * scale));
                 }
 
-                // Active track
+                // Active track - only drawn if NOT muted
                 int activeWidth = (int)(w * value);
-                if (activeWidth > 0)
+                if (!IsMuted && activeWidth > 0)
                 {
                     using (var brush = new SolidBrush(ActiveColor))
                     {
@@ -140,15 +157,16 @@ namespace TaskbarAudioSwitcher.Controls
 
                 // Thumb
                 int thumbRadius = (int)(6 * scale);
-                int thumbX = x + activeWidth;
+                int thumbX = x + (IsMuted ? 0 : activeWidth);
                 int thumbY = Height / 2;
 
-                Color thumbBg = IsDarkMode ? Color.White : Color.FromArgb(245, 245, 245);
+                Color thumbBg = IsMuted ? (IsDarkMode ? Color.FromArgb(70, 70, 70) : Color.FromArgb(200, 200, 200)) : (IsDarkMode ? Color.White : Color.FromArgb(245, 245, 245));
+                Color thumbBorderColor = IsMuted ? Color.FromArgb(140, 140, 140) : ActiveColor;
                 using (var brush = new SolidBrush(thumbBg))
                 {
                     g.FillEllipse(brush, thumbX - thumbRadius, thumbY - thumbRadius, thumbRadius * 2, thumbRadius * 2);
                 }
-                using (var pen = new Pen(ActiveColor, (int)(2 * scale)))
+                using (var pen = new Pen(thumbBorderColor, (int)(2 * scale)))
                 {
                     g.DrawEllipse(pen, thumbX - thumbRadius, thumbY - thumbRadius, thumbRadius * 2, thumbRadius * 2);
                 }

@@ -1,4 +1,4 @@
-# Taskbar Audio Switcher (v3.6.0)
+# Taskbar Audio Switcher (v3.7.1)
 
 An extremely lightweight, stable, and convenient Windows 11 utility that automatically places itself on the taskbar (next to the system clock and system tray icons), allowing you to control all computer audio outputs, inputs, and application volumes quickly and comfortably.
 
@@ -45,7 +45,13 @@ To ensure 24/7 stability and prevent being flagged by antivirus software, this u
 
 ## 4. Release History & Changelog
 
-### v3.6.0 (Current Version)
+### v3.7.1 (Current Version)
+* **Unified Microphone Click Interaction:** Left-clicking the microphone icon opens the input device selection context menu to choose the default recording device; right-clicking instantly toggles system-wide microphone mute/unmute; mouse-wheel scrolling adjusts recording volume levels. Hover ToolTips dynamically indicate current mute status (`(Muted - Right-click: Unmute)`).
+* **Volume Percentage Display Toggles (Space Saving):** Added configurable toggles in `SettingsForm` (`Show master volume percentage text` and `Show pinned apps volume percentage text`). Disabling percentage text collapses numerical labels and automatically narrows the taskbar widget to save horizontal taskbar real estate.
+* **Expanded Pinned Applications (Limit Increased to 4):** Up to 4 active audio applications can now be pinned directly to the taskbar widget simultaneously from the expanded audio mixer panel.
+* **Right-Click App Mute & Visual Indicators:** Right-clicking on any pinned app icon, slider, or volume label toggles Mute/Unmute for that application's WASAPI session. Muted applications render with an empty/hollow vertical volume bar, a sleek red diagonal slash across the application icon, red `"MUTE"` status text, and descriptive tooltips.
+
+### v3.6.0
 * **Vertical Volume Slider & Compact Layout Mode:** Configurable `Volume slider style:` setting in `SettingsForm` (`Horizontal (Default)` vs `Vertical (Compact)`). In vertical mode, master and application volume levels are rendered as compact vertical columns without thumb knobs, reducing taskbar horizontal footprint by over 50%.
 * **Right-Click Output Device Mute Toggle:** Right-clicking on any audio output device button on the taskbar instantly toggles Mute/Unmute for that device (including inactive output devices). Active muted devices render a sleek red diagonal slash (`IsMuted`) across the icon for instant visual recognition.
 * **Space-Saving Widget Layout:** Removed the dedicated Mute button (`btnMute`), placing the main volume bar and percentage label immediately after output device selection buttons and vertical separator lines, maximizing taskbar space efficiency.

@@ -26,6 +26,8 @@ namespace TaskbarAudioSwitcher.UI
         private CheckBox cbShowScreenMove;
         private CheckBox cbShowMicrophone;
         private CheckBox cbMonitorMicrophone;
+        private CheckBox cbShowVolumePercentage;
+        private CheckBox cbShowAppVolumePercentage;
         private ComboBox cmbScrollStep;
         private ComboBox cmbWidgetFontSize;
         private ComboBox cmbSliderOrientation;
@@ -53,7 +55,7 @@ namespace TaskbarAudioSwitcher.UI
 
             // Setup Window
             this.Text = "Settings - Taskbar Audio Switcher";
-            this.Size = new Size((int)(380 * scale), (int)(710 * scale));
+            this.Size = new Size((int)(380 * scale), (int)(760 * scale));
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
             this.MinimizeBox = false;
@@ -142,11 +144,35 @@ namespace TaskbarAudioSwitcher.UI
             };
             this.Controls.Add(cbMonitorMicrophone);
 
+            // Show Master Volume Percentage Checkbox
+            cbShowVolumePercentage = new CheckBox
+            {
+                Text = "Show master volume percentage text",
+                Location = new Point((int)(20 * scale), (int)(265 * scale)),
+                Size = new Size((int)(325 * scale), (int)(24 * scale)),
+                Checked = settings.ShowVolumePercentage,
+                Font = new Font("Segoe UI", 9f * scale, FontStyle.Bold),
+                FlatStyle = FlatStyle.Flat
+            };
+            this.Controls.Add(cbShowVolumePercentage);
+
+            // Show App Volume Percentage Checkbox
+            cbShowAppVolumePercentage = new CheckBox
+            {
+                Text = "Show pinned apps volume percentage text",
+                Location = new Point((int)(20 * scale), (int)(290 * scale)),
+                Size = new Size((int)(325 * scale), (int)(24 * scale)),
+                Checked = settings.ShowAppVolumePercentage,
+                Font = new Font("Segoe UI", 9f * scale, FontStyle.Bold),
+                FlatStyle = FlatStyle.Flat
+            };
+            this.Controls.Add(cbShowAppVolumePercentage);
+
             // Monitor Label & Dropdown
             Label lblScreen = new Label
             {
                 Text = "Display on taskbar screen:",
-                Location = new Point((int)(20 * scale), (int)(275 * scale)),
+                Location = new Point((int)(20 * scale), (int)(325 * scale)),
                 Size = new Size((int)(325 * scale), (int)(20 * scale)),
                 Font = new Font("Segoe UI", 9f * scale, FontStyle.Bold)
             };
@@ -154,7 +180,7 @@ namespace TaskbarAudioSwitcher.UI
 
             cmbScreen = new ComboBox
             {
-                Location = new Point((int)(20 * scale), (int)(295 * scale)),
+                Location = new Point((int)(20 * scale), (int)(345 * scale)),
                 Size = new Size((int)(325 * scale), (int)(24 * scale)),
                 DropDownStyle = ComboBoxStyle.DropDownList,
                 BackColor = controlBg,
@@ -185,7 +211,7 @@ namespace TaskbarAudioSwitcher.UI
             Label lblAlignment = new Label
             {
                 Text = "Taskbar alignment:",
-                Location = new Point((int)(20 * scale), (int)(335 * scale)),
+                Location = new Point((int)(20 * scale), (int)(385 * scale)),
                 Size = new Size((int)(325 * scale), (int)(20 * scale)),
                 Font = new Font("Segoe UI", 9f * scale, FontStyle.Bold)
             };
@@ -193,7 +219,7 @@ namespace TaskbarAudioSwitcher.UI
 
             cmbAlignment = new ComboBox
             {
-                Location = new Point((int)(20 * scale), (int)(355 * scale)),
+                Location = new Point((int)(20 * scale), (int)(405 * scale)),
                 Size = new Size((int)(325 * scale), (int)(24 * scale)),
                 DropDownStyle = ComboBoxStyle.DropDownList,
                 BackColor = controlBg,
@@ -214,7 +240,7 @@ namespace TaskbarAudioSwitcher.UI
             cbAlwaysOnTop = new CheckBox
             {
                 Text = "Always on Top (even over fullscreen)",
-                Location = new Point((int)(20 * scale), (int)(395 * scale)),
+                Location = new Point((int)(20 * scale), (int)(445 * scale)),
                 Size = new Size((int)(325 * scale), (int)(24 * scale)),
                 Checked = settings.AlwaysOnTop,
                 Font = new Font("Segoe UI", 9f * scale, FontStyle.Bold),
@@ -226,7 +252,7 @@ namespace TaskbarAudioSwitcher.UI
             cbMoveOnFullscreen = new CheckBox
             {
                 Text = "Move to second screen on game launch",
-                Location = new Point((int)(20 * scale), (int)(420 * scale)),
+                Location = new Point((int)(20 * scale), (int)(470 * scale)),
                 Size = new Size((int)(325 * scale), (int)(24 * scale)),
                 Checked = settings.MoveOnFullscreen,
                 Font = new Font("Segoe UI", 9f * scale, FontStyle.Bold),
@@ -238,7 +264,7 @@ namespace TaskbarAudioSwitcher.UI
             cbShowScreenMove = new CheckBox
             {
                 Text = "Show monitor switch button on the bar",
-                Location = new Point((int)(20 * scale), (int)(445 * scale)),
+                Location = new Point((int)(20 * scale), (int)(495 * scale)),
                 Size = new Size((int)(325 * scale), (int)(24 * scale)),
                 Checked = settings.ShowScreenMoveButton,
                 Font = new Font("Segoe UI", 9f * scale, FontStyle.Bold),
@@ -250,7 +276,7 @@ namespace TaskbarAudioSwitcher.UI
             Label lblScreenMoveDesc = new Label
             {
                 Text = "Left-click: Move to next monitor on the right (docked to left edge).\r\nRight-click: Move to next monitor on the left (docked to right edge).",
-                Location = new Point((int)(40 * scale), (int)(469 * scale)),
+                Location = new Point((int)(40 * scale), (int)(519 * scale)),
                 Size = new Size((int)(305 * scale), (int)(30 * scale)),
                 Font = new Font("Segoe UI", 7.5f * scale, FontStyle.Regular),
                 ForeColor = isDarkMode ? Color.FromArgb(170, 170, 170) : Color.FromArgb(100, 100, 100)
@@ -261,7 +287,7 @@ namespace TaskbarAudioSwitcher.UI
             Label lblScrollStep = new Label
             {
                 Text = "Scroll volume step:",
-                Location = new Point((int)(20 * scale), (int)(505 * scale)),
+                Location = new Point((int)(20 * scale), (int)(555 * scale)),
                 Size = new Size((int)(170 * scale), (int)(20 * scale)),
                 Font = new Font("Segoe UI", 9f * scale, FontStyle.Bold)
             };
@@ -269,7 +295,7 @@ namespace TaskbarAudioSwitcher.UI
 
             cmbScrollStep = new ComboBox
             {
-                Location = new Point((int)(200 * scale), (int)(503 * scale)),
+                Location = new Point((int)(200 * scale), (int)(553 * scale)),
                 Size = new Size((int)(145 * scale), (int)(24 * scale)),
                 DropDownStyle = ComboBoxStyle.DropDownList,
                 BackColor = controlBg,
@@ -292,7 +318,7 @@ namespace TaskbarAudioSwitcher.UI
             Label lblWidgetFontSize = new Label
             {
                 Text = "Widget font size:",
-                Location = new Point((int)(20 * scale), (int)(540 * scale)),
+                Location = new Point((int)(20 * scale), (int)(590 * scale)),
                 Size = new Size((int)(170 * scale), (int)(20 * scale)),
                 Font = new Font("Segoe UI", 9f * scale, FontStyle.Bold)
             };
@@ -300,7 +326,7 @@ namespace TaskbarAudioSwitcher.UI
 
             cmbWidgetFontSize = new ComboBox
             {
-                Location = new Point((int)(200 * scale), (int)(538 * scale)),
+                Location = new Point((int)(200 * scale), (int)(588 * scale)),
                 Size = new Size((int)(145 * scale), (int)(24 * scale)),
                 DropDownStyle = ComboBoxStyle.DropDownList,
                 BackColor = controlBg,
@@ -326,7 +352,7 @@ namespace TaskbarAudioSwitcher.UI
             Label lblSliderOrientation = new Label
             {
                 Text = "Volume slider style:",
-                Location = new Point((int)(20 * scale), (int)(575 * scale)),
+                Location = new Point((int)(20 * scale), (int)(625 * scale)),
                 Size = new Size((int)(170 * scale), (int)(20 * scale)),
                 Font = new Font("Segoe UI", 9f * scale, FontStyle.Bold)
             };
@@ -334,7 +360,7 @@ namespace TaskbarAudioSwitcher.UI
 
             cmbSliderOrientation = new ComboBox
             {
-                Location = new Point((int)(200 * scale), (int)(573 * scale)),
+                Location = new Point((int)(200 * scale), (int)(623 * scale)),
                 Size = new Size((int)(145 * scale), (int)(24 * scale)),
                 DropDownStyle = ComboBoxStyle.DropDownList,
                 BackColor = controlBg,
@@ -355,7 +381,7 @@ namespace TaskbarAudioSwitcher.UI
             btnSave = new Button
             {
                 Text = "Save",
-                Location = new Point((int)(155 * scale), (int)(620 * scale)),
+                Location = new Point((int)(155 * scale), (int)(670 * scale)),
                 Size = new Size((int)(90 * scale), (int)(30 * scale)),
                 BackColor = this.accentColor,
                 ForeColor = Color.White,
@@ -370,7 +396,7 @@ namespace TaskbarAudioSwitcher.UI
             btnCancel = new Button
             {
                 Text = "Cancel",
-                Location = new Point((int)(255 * scale), (int)(620 * scale)),
+                Location = new Point((int)(255 * scale), (int)(670 * scale)),
                 Size = new Size((int)(90 * scale), (int)(30 * scale)),
                 BackColor = btnBg,
                 ForeColor = textColor,
@@ -392,8 +418,10 @@ namespace TaskbarAudioSwitcher.UI
 
             toolTip.SetToolTip(cbFilterDevices, "If enabled, only the checked audio devices in the list below will be displayed on the bar.");
             toolTip.SetToolTip(lblDevices, "Check the audio output devices you want to show on the bar. Unchecked devices will be hidden.");
-            toolTip.SetToolTip(cbShowMicrophone, "Displays a microphone icon on the bar.\nLeft-click: System-wide mute toggle (Mute/Unmute)\nRight-click: Input device selection (default input)\nMouse scroll: Adjust microphone volume");
+            toolTip.SetToolTip(cbShowMicrophone, "Displays a microphone icon on the bar.\nLeft-click: Input device selection (default input)\nRight-click: System-wide mute toggle (Mute/Unmute)\nMouse scroll: Adjust microphone volume");
             toolTip.SetToolTip(cbMonitorMicrophone, "Monitors microphone usage in the background (1s interval). If any app (e.g. Discord) is actively using the microphone, the icon fills with red.");
+            toolTip.SetToolTip(cbShowVolumePercentage, "Shows or hides the numerical volume percentage (e.g. 75%) next to the master volume slider on the bar to save space.");
+            toolTip.SetToolTip(cbShowAppVolumePercentage, "Shows or hides the numerical volume percentage next to pinned application sliders on the bar to save space.");
             toolTip.SetToolTip(lblScreen, "Select which screen's taskbar the utility bar is docked to.");
             toolTip.SetToolTip(cmbScreen, "Select which screen's taskbar the utility bar is docked to.");
             toolTip.SetToolTip(lblAlignment, "Left alignment places the bar next to the Start button. Right alignment places it next to the clock.");
@@ -520,6 +548,8 @@ namespace TaskbarAudioSwitcher.UI
             settings.ShowScreenMoveButton = cbShowScreenMove.Checked;
             settings.ShowMicrophoneButton = cbShowMicrophone.Checked;
             settings.MonitorMicrophoneState = cbMonitorMicrophone.Checked;
+            settings.ShowVolumePercentage = cbShowVolumePercentage.Checked;
+            settings.ShowAppVolumePercentage = cbShowAppVolumePercentage.Checked;
 
             if (cmbScrollStep.SelectedIndex == 0) settings.ScrollStep = 1;
             else if (cmbScrollStep.SelectedIndex == 2) settings.ScrollStep = 5;
