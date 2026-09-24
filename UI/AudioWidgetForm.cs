@@ -145,7 +145,7 @@ namespace TaskbarAudioSwitcher.UI
             this.FormBorderStyle = FormBorderStyle.None;
             this.ShowInTaskbar = false;
             this.TopMost = true;
-            this.Height = 36;
+            this.Height = (int)(36 * DpiHelper.GetScale(this.Handle));
             this.BackColor = Color.Fuchsia;
             this.TransparencyKey = Color.Fuchsia;
             this.DoubleBuffered = true;
@@ -465,10 +465,16 @@ namespace TaskbarAudioSwitcher.UI
         {
             const int WM_SETTINGCHANGE = 0x001A;
             const int WM_THEMECHANGED = 0x031E;
-            if (m.Msg == WM_SETTINGCHANGE || m.Msg == WM_THEMECHANGED)
+            const int WM_DPICHANGED = 0x02E0;
+            if (m.Msg == WM_SETTINGCHANGE || m.Msg == WM_THEMECHANGED || m.Msg == WM_DPICHANGED)
             {
                 UpdateThemeColors();
+                if (!isExpanded)
+                {
+                    this.Height = GetCollapsedHeight();
+                }
                 UpdateLayout();
+                UpdatePosition();
             }
             base.WndProc(ref m);
         }
@@ -886,7 +892,7 @@ namespace TaskbarAudioSwitcher.UI
             {
                 lblVolumeText.Visible = true;
                 currentX += (isVertical ? (int)(2 * scale) : margin);
-                lblVolumeText.Font = new Font("Segoe UI", settings.WidgetFontSize * scale, FontStyle.Regular);
+                lblVolumeText.Font = new Font("Segoe UI", settings.WidgetFontSize, FontStyle.Regular);
                 Size textMeasured = TextRenderer.MeasureText("100%", lblVolumeText.Font);
                 int fontTextW = isVertical
                     ? Math.Max((int)(34 * scale), textMeasured.Width + (int)(2 * scale))
@@ -947,7 +953,7 @@ namespace TaskbarAudioSwitcher.UI
                             pinned.VolLabel.Visible = true;
                             currentX += (int)(2 * scale);
                             float pinnedFontSize = Math.Max(6.0f, settings.WidgetFontSize - 0.5f);
-                            pinned.VolLabel.Font = new Font("Segoe UI", pinnedFontSize * scale, FontStyle.Regular);
+                            pinned.VolLabel.Font = new Font("Segoe UI", pinnedFontSize, FontStyle.Regular);
                             Size pTextMeasured = TextRenderer.MeasureText("100%", pinned.VolLabel.Font);
                             int pFontTextW = Math.Max((int)(34 * scale), pTextMeasured.Width + (int)(2 * scale));
                             pinned.VolLabel.Size = new Size(pFontTextW, (int)(18 * scale));
@@ -993,7 +999,7 @@ namespace TaskbarAudioSwitcher.UI
                             pinned.VolLabel.Visible = true;
                             currentX += margin;
                             float pinnedFontSize = Math.Max(6.0f, settings.WidgetFontSize - 0.5f);
-                            pinned.VolLabel.Font = new Font("Segoe UI", pinnedFontSize * scale, FontStyle.Regular);
+                            pinned.VolLabel.Font = new Font("Segoe UI", pinnedFontSize, FontStyle.Regular);
                             Size textMeasuredPinned = TextRenderer.MeasureText("100%", pinned.VolLabel.Font);
                             int fontTextWPinned = Math.Max((int)(42 * scale), textMeasuredPinned.Width + (int)(4 * scale));
                             pinned.VolLabel.Size = new Size(fontTextWPinned, (int)(18 * scale));
@@ -1171,42 +1177,59 @@ namespace TaskbarAudioSwitcher.UI
             IntPtr trayHwnd = Win32.FindWindow("Shell_TrayWnd", null);
 
             int collapsedHeight = (int)(36 * scale);
-            int targetTop = taskbarTop + (taskbarHeight - collapsedHeight) / 2;
+            int targetTop = 0;
+
+            // Handle auto-hidden taskbar:
+            // When taskbar is auto-hidden in Windows, WorkingArea covers full screen, so taskbarHeight <= 4.
+            if (taskbarHeight < collapsedHeight)
+            {
+                // Auto-hidden taskbar: dock cleanly at the bottom edge of the screen
+                targetTop = bounds.Bottom - collapsedHeight - (int)(4 * scale);
+            }
+            else
+            {
+                // Normal visible taskbar: vertically center within the taskbar
+                targetTop = taskbarTop + (taskbarHeight - collapsedHeight) / 2;
+            }
+
             if (isExpanded)
             {
                 targetTop = targetTop + collapsedHeight - this.Height;
             }
+            targetTop = Math.Max(bounds.Top, targetTop);
 
             int targetLeft = 0;
             string currentAlignment = isMovedToSecond ? "Left" : settings.Alignment;
 
             if (currentAlignment == "Left")
             {
-                    if (scr.Primary)
+                if (scr.Primary)
                     targetLeft = bounds.Left + (int)(84 * scale);
                 else
                     targetLeft = bounds.Left + (int)(12 * scale);
             }
             else // "Right"
             {
+                bool placedNextToTray = false;
                 if (scr.Primary && trayHwnd != IntPtr.Zero)
                 {
                     IntPtr notifyHwnd = Win32.FindWindowEx(trayHwnd, IntPtr.Zero, "TrayNotifyWnd", null);
                     Win32.RECT rectTray;
-                    if (notifyHwnd != IntPtr.Zero && Win32.GetWindowRect(notifyHwnd, out rectTray))
+                    if (notifyHwnd != IntPtr.Zero && Win32.GetWindowRect(notifyHwnd, out rectTray) && rectTray.Left > bounds.Left && rectTray.Left < bounds.Right)
                     {
-                        targetLeft = (int)(rectTray.Left / scale) - calculatedWidth - (int)(48 * scale);
-                    }
-                    else
-                    {
-                        targetLeft = bounds.Right - calculatedWidth - (int)(200 * scale);
+                        targetLeft = rectTray.Left - calculatedWidth - (int)(12 * scale);
+                        placedNextToTray = true;
                     }
                 }
-                else
+
+                if (!placedNextToTray)
                 {
-                    targetLeft = bounds.Right - calculatedWidth - (int)(200 * scale);
+                    targetLeft = bounds.Right - calculatedWidth - (int)(180 * scale);
                 }
             }
+
+            // Safety clamp within screen horizontal bounds
+            targetLeft = Math.Max(bounds.Left + (int)(8 * scale), Math.Min(bounds.Right - calculatedWidth - (int)(8 * scale), targetLeft));
 
 
 
@@ -1860,7 +1883,7 @@ namespace TaskbarAudioSwitcher.UI
                     {
                         iconLabel = new Label
                         {
-                            Font = new Font("Segoe MDL2 Assets", 8f * scale),
+                            Font = new Font("Segoe MDL2 Assets", 8f),
                             ForeColor = themeTextColor,
                             Text = data.IsSystemSounds ? "\uE767" : "\uE715",
                             TextAlign = ContentAlignment.MiddleCenter,
@@ -1909,7 +1932,7 @@ namespace TaskbarAudioSwitcher.UI
 
                     Label volLabel = new Label
                     {
-                        Font = new Font("Segoe UI", 7.5f * scale),
+                        Font = new Font("Segoe UI", 7.5f),
                         ForeColor = data.Mute ? Color.FromArgb(232, 17, 35) : themeTextColor,
                         Text = data.Mute ? "MUTE" : string.Format("{0:0}%", data.Volume * 100),
                         TextAlign = ContentAlignment.MiddleRight,
@@ -2004,7 +2027,7 @@ namespace TaskbarAudioSwitcher.UI
                 Checked = settings.HideSilentApps,
                 ForeColor = themeTextColor,
                 FlatStyle = FlatStyle.Flat,
-                Font = new Font("Segoe UI", 7.5f * scale)
+                Font = new Font("Segoe UI", 7.5f)
             };
             cbHideSilent.CheckedChanged += (s, e) => {
                 settings.HideSilentApps = cbHideSilent.Checked;
@@ -2021,7 +2044,7 @@ namespace TaskbarAudioSwitcher.UI
                 {
                     Location = new Point((int)(10 * scale), checkboxH + (int)(10 * scale)),
                     Size = new Size(pnlMixer.Width - (int)(20 * scale), (int)(24 * scale)),
-                    Font = new Font("Segoe UI", 8f * scale, FontStyle.Italic),
+                    Font = new Font("Segoe UI", 8f, FontStyle.Italic),
                     ForeColor = themeTextColor,
                     Text = "No active applications found",
                     TextAlign = ContentAlignment.MiddleCenter,
@@ -2054,7 +2077,7 @@ namespace TaskbarAudioSwitcher.UI
                         HoverBgColor = themeHoverBgColor,
                         ActiveBgColor = Color.Transparent,
                         IsActive = false,
-                        Font = new Font("Segoe MDL2 Assets", 7.5f * scale)
+                        Font = new Font("Segoe MDL2 Assets", 7.5f)
                     };
                     toolTip.SetToolTip(btnPin, pinnedSessionIds.Contains(sid) ? "Unpin from taskbar" : "Pin to taskbar");
 
@@ -2102,7 +2125,7 @@ namespace TaskbarAudioSwitcher.UI
                         {
                             Location = new Point((int)(30 * scale), (int)(8 * scale)),
                             Size = new Size((int)(16 * scale), (int)(16 * scale)),
-                            Font = new Font("Segoe MDL2 Assets", 8f * scale),
+                            Font = new Font("Segoe MDL2 Assets", 8f),
                             ForeColor = themeTextColor,
                             Text = data.IsSystemSounds ? "\uE767" : "\uE715",
                             TextAlign = ContentAlignment.MiddleCenter,
@@ -2115,7 +2138,7 @@ namespace TaskbarAudioSwitcher.UI
                     {
                         Location = new Point((int)(52 * scale), (int)(10 * scale)),
                         Size = new Size((int)(56 * scale), (int)(16 * scale)),
-                        Font = new Font("Segoe UI", 8f * scale),
+                        Font = new Font("Segoe UI", 8f),
                         ForeColor = themeTextColor,
                         Text = data.Name,
                         TextAlign = ContentAlignment.MiddleLeft,
@@ -2142,7 +2165,7 @@ namespace TaskbarAudioSwitcher.UI
                     {
                         Location = new Point(rw - (int)(66 * scale), (int)(10 * scale)),
                         Size = new Size((int)(42 * scale), (int)(16 * scale)),
-                        Font = new Font("Segoe UI", 8f * scale),
+                        Font = new Font("Segoe UI", 8f),
                         ForeColor = data.Mute ? Color.FromArgb(232, 17, 35) : themeTextColor,
                         Text = data.Mute ? "MUTE" : string.Format("{0:0}%", data.Volume * 100),
                         TextAlign = ContentAlignment.MiddleRight,
@@ -2158,7 +2181,7 @@ namespace TaskbarAudioSwitcher.UI
                         HoverBgColor = themeHoverBgColor,
                         ActiveBgColor = Color.Transparent,
                         IsActive = false,
-                        Font = new Font("Segoe MDL2 Assets", 7.5f * scale),
+                        Font = new Font("Segoe MDL2 Assets", 7.5f),
                         Enabled = !data.IsSystemSounds && data.ProcessId > 0
                     };
                     

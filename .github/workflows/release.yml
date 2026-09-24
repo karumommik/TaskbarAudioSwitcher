@@ -40,7 +40,8 @@ jobs:
           Write-Host "Using MakeAppx: $makeAppx"
 
           # Format MSIX version (X.Y.Z.0)
-          $msixVersion = "$env:VERSION"
+          $cleanVersion = ($env:VERSION -replace '-.*$', '')
+          $msixVersion = "$cleanVersion"
           if ($msixVersion -notmatch '^\d+\.\d+\.\d+\.\d+$') {
               if ($msixVersion -match '^\d+\.\d+\.\d+$') {
                   $msixVersion = "$msixVersion.0"
@@ -165,7 +166,12 @@ jobs:
             echo "Release $TAG already exists; leaving it untouched."
             exit 0
           fi
+          EXTRA_FLAGS=""
+          if [[ "$TAG" == *"beta"* || "$TAG" == *"alpha"* || "$TAG" == *"rc"* ]]; then
+            EXTRA_FLAGS="--prerelease"
+          fi
           gh release create "$TAG" \
             --title "$TAG" \
             --notes-file notes.md \
+            $EXTRA_FLAGS \
             dist/*.zip dist/*.sha256

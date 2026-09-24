@@ -151,7 +151,7 @@ namespace TaskbarAudioSwitcher.Controls
             Color textColor = isMuted ? Color.FromArgb(120, outlineColor) : outlineColor;
             using (var brush = new SolidBrush(textColor))
             {
-                float volFontSize = Math.Max(4.5f, WidgetFontSize - 1.8f) * scale;
+                float volFontSize = Math.Max(4.5f, WidgetFontSize - 1.8f);
                 using (var textFont = new Font("Segoe UI", volFontSize, FontStyle.Regular))
                 {
                     var sfText = new StringFormat

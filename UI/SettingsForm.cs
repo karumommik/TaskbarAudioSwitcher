@@ -55,13 +55,15 @@ namespace TaskbarAudioSwitcher.UI
 
             // Setup Window
             this.Text = "Settings - Taskbar Audio Switcher";
-            this.Size = new Size((int)(380 * scale), (int)(760 * scale));
+            this.AutoScaleMode = AutoScaleMode.None;
+            this.Font = new Font("Segoe UI", 9f);
+            this.ClientSize = new Size((int)(380 * scale), (int)(725 * scale));
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
             this.MinimizeBox = false;
             this.StartPosition = FormStartPosition.Manual;
             this.Load += (s, e) => {
-                var scr = Screen.PrimaryScreen;
+                var scr = Screen.FromControl(this) ?? Screen.PrimaryScreen;
                 if (scr != null) {
                     this.Location = new Point(
                         scr.WorkingArea.Left + (scr.WorkingArea.Width - this.Width) / 2,
@@ -84,9 +86,9 @@ namespace TaskbarAudioSwitcher.UI
             {
                 Text = "Show only selected devices (filter active)",
                 Location = new Point((int)(20 * scale), (int)(15 * scale)),
-                Size = new Size((int)(325 * scale), (int)(24 * scale)),
+                Size = new Size((int)(340 * scale), (int)(24 * scale)),
                 Checked = settings.FilterDevices,
-                Font = new Font("Segoe UI", 9f * scale, FontStyle.Bold),
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
                 FlatStyle = FlatStyle.Flat
             };
             this.Controls.Add(cbFilterDevices);
@@ -97,7 +99,7 @@ namespace TaskbarAudioSwitcher.UI
                 Text = "Devices to show when filter is active:",
                 Location = new Point((int)(20 * scale), (int)(45 * scale)),
                 Size = new Size((int)(340 * scale), (int)(20 * scale)),
-                Font = new Font("Segoe UI", 8.5f * scale)
+                Font = new Font("Segoe UI", 8.5f)
             };
             this.Controls.Add(lblDevices);
 
@@ -105,7 +107,7 @@ namespace TaskbarAudioSwitcher.UI
             pnlDevices = new Panel
             {
                 Location = new Point((int)(20 * scale), (int)(68 * scale)),
-                Size = new Size((int)(325 * scale), (int)(130 * scale)),
+                Size = new Size((int)(340 * scale), (int)(130 * scale)),
                 BorderStyle = BorderStyle.FixedSingle,
                 BackColor = controlBg,
                 AutoScroll = true,
@@ -125,9 +127,9 @@ namespace TaskbarAudioSwitcher.UI
             {
                 Text = "Show microphone button on the bar",
                 Location = new Point((int)(20 * scale), (int)(215 * scale)),
-                Size = new Size((int)(325 * scale), (int)(24 * scale)),
+                Size = new Size((int)(340 * scale), (int)(24 * scale)),
                 Checked = settings.ShowMicrophoneButton,
-                Font = new Font("Segoe UI", 9f * scale, FontStyle.Bold),
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
                 FlatStyle = FlatStyle.Flat
             };
             this.Controls.Add(cbShowMicrophone);
@@ -137,9 +139,9 @@ namespace TaskbarAudioSwitcher.UI
             {
                 Text = "Monitor microphone active usage (red fill)",
                 Location = new Point((int)(20 * scale), (int)(240 * scale)),
-                Size = new Size((int)(325 * scale), (int)(24 * scale)),
+                Size = new Size((int)(340 * scale), (int)(24 * scale)),
                 Checked = settings.MonitorMicrophoneState,
-                Font = new Font("Segoe UI", 9f * scale, FontStyle.Bold),
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
                 FlatStyle = FlatStyle.Flat
             };
             this.Controls.Add(cbMonitorMicrophone);
@@ -149,9 +151,9 @@ namespace TaskbarAudioSwitcher.UI
             {
                 Text = "Show master volume percentage text",
                 Location = new Point((int)(20 * scale), (int)(265 * scale)),
-                Size = new Size((int)(325 * scale), (int)(24 * scale)),
+                Size = new Size((int)(340 * scale), (int)(24 * scale)),
                 Checked = settings.ShowVolumePercentage,
-                Font = new Font("Segoe UI", 9f * scale, FontStyle.Bold),
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
                 FlatStyle = FlatStyle.Flat
             };
             this.Controls.Add(cbShowVolumePercentage);
@@ -161,9 +163,9 @@ namespace TaskbarAudioSwitcher.UI
             {
                 Text = "Show pinned apps volume percentage text",
                 Location = new Point((int)(20 * scale), (int)(290 * scale)),
-                Size = new Size((int)(325 * scale), (int)(24 * scale)),
+                Size = new Size((int)(340 * scale), (int)(24 * scale)),
                 Checked = settings.ShowAppVolumePercentage,
-                Font = new Font("Segoe UI", 9f * scale, FontStyle.Bold),
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
                 FlatStyle = FlatStyle.Flat
             };
             this.Controls.Add(cbShowAppVolumePercentage);
@@ -172,21 +174,21 @@ namespace TaskbarAudioSwitcher.UI
             Label lblScreen = new Label
             {
                 Text = "Display on taskbar screen:",
-                Location = new Point((int)(20 * scale), (int)(325 * scale)),
-                Size = new Size((int)(325 * scale), (int)(20 * scale)),
-                Font = new Font("Segoe UI", 9f * scale, FontStyle.Bold)
+                Location = new Point((int)(20 * scale), (int)(322 * scale)),
+                Size = new Size((int)(340 * scale), (int)(20 * scale)),
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold)
             };
             this.Controls.Add(lblScreen);
 
             cmbScreen = new ComboBox
             {
-                Location = new Point((int)(20 * scale), (int)(345 * scale)),
-                Size = new Size((int)(325 * scale), (int)(24 * scale)),
+                Location = new Point((int)(20 * scale), (int)(344 * scale)),
+                Size = new Size((int)(340 * scale), (int)(26 * scale)),
                 DropDownStyle = ComboBoxStyle.DropDownList,
                 BackColor = controlBg,
                 ForeColor = textColor,
                 FlatStyle = FlatStyle.Flat,
-                Font = new Font("Segoe UI", 9f * scale)
+                Font = new Font("Segoe UI", 9f)
             };
             this.Controls.Add(cmbScreen);
 
@@ -211,21 +213,21 @@ namespace TaskbarAudioSwitcher.UI
             Label lblAlignment = new Label
             {
                 Text = "Taskbar alignment:",
-                Location = new Point((int)(20 * scale), (int)(385 * scale)),
-                Size = new Size((int)(325 * scale), (int)(20 * scale)),
-                Font = new Font("Segoe UI", 9f * scale, FontStyle.Bold)
+                Location = new Point((int)(20 * scale), (int)(380 * scale)),
+                Size = new Size((int)(340 * scale), (int)(20 * scale)),
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold)
             };
             this.Controls.Add(lblAlignment);
 
             cmbAlignment = new ComboBox
             {
-                Location = new Point((int)(20 * scale), (int)(405 * scale)),
-                Size = new Size((int)(325 * scale), (int)(24 * scale)),
+                Location = new Point((int)(20 * scale), (int)(402 * scale)),
+                Size = new Size((int)(340 * scale), (int)(26 * scale)),
                 DropDownStyle = ComboBoxStyle.DropDownList,
                 BackColor = controlBg,
                 ForeColor = textColor,
                 FlatStyle = FlatStyle.Flat,
-                Font = new Font("Segoe UI", 9f * scale)
+                Font = new Font("Segoe UI", 9f)
             };
             cmbAlignment.Items.Add("Next to clock (Right)");
             cmbAlignment.Items.Add("Next to Start button (Left)");
@@ -240,10 +242,10 @@ namespace TaskbarAudioSwitcher.UI
             cbAlwaysOnTop = new CheckBox
             {
                 Text = "Always on Top (even over fullscreen)",
-                Location = new Point((int)(20 * scale), (int)(445 * scale)),
-                Size = new Size((int)(325 * scale), (int)(24 * scale)),
+                Location = new Point((int)(20 * scale), (int)(440 * scale)),
+                Size = new Size((int)(340 * scale), (int)(24 * scale)),
                 Checked = settings.AlwaysOnTop,
-                Font = new Font("Segoe UI", 9f * scale, FontStyle.Bold),
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
                 FlatStyle = FlatStyle.Flat
             };
             this.Controls.Add(cbAlwaysOnTop);
@@ -252,10 +254,10 @@ namespace TaskbarAudioSwitcher.UI
             cbMoveOnFullscreen = new CheckBox
             {
                 Text = "Move to second screen on game launch",
-                Location = new Point((int)(20 * scale), (int)(470 * scale)),
-                Size = new Size((int)(325 * scale), (int)(24 * scale)),
+                Location = new Point((int)(20 * scale), (int)(465 * scale)),
+                Size = new Size((int)(340 * scale), (int)(24 * scale)),
                 Checked = settings.MoveOnFullscreen,
-                Font = new Font("Segoe UI", 9f * scale, FontStyle.Bold),
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
                 FlatStyle = FlatStyle.Flat
             };
             this.Controls.Add(cbMoveOnFullscreen);
@@ -264,10 +266,10 @@ namespace TaskbarAudioSwitcher.UI
             cbShowScreenMove = new CheckBox
             {
                 Text = "Show monitor switch button on the bar",
-                Location = new Point((int)(20 * scale), (int)(495 * scale)),
-                Size = new Size((int)(325 * scale), (int)(24 * scale)),
+                Location = new Point((int)(20 * scale), (int)(490 * scale)),
+                Size = new Size((int)(340 * scale), (int)(24 * scale)),
                 Checked = settings.ShowScreenMoveButton,
-                Font = new Font("Segoe UI", 9f * scale, FontStyle.Bold),
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
                 FlatStyle = FlatStyle.Flat
             };
             this.Controls.Add(cbShowScreenMove);
@@ -276,9 +278,9 @@ namespace TaskbarAudioSwitcher.UI
             Label lblScreenMoveDesc = new Label
             {
                 Text = "Left-click: Move to next monitor on the right (docked to left edge).\r\nRight-click: Move to next monitor on the left (docked to right edge).",
-                Location = new Point((int)(40 * scale), (int)(519 * scale)),
-                Size = new Size((int)(305 * scale), (int)(30 * scale)),
-                Font = new Font("Segoe UI", 7.5f * scale, FontStyle.Regular),
+                Location = new Point((int)(40 * scale), (int)(515 * scale)),
+                Size = new Size((int)(320 * scale), (int)(32 * scale)),
+                Font = new Font("Segoe UI", 7.5f, FontStyle.Regular),
                 ForeColor = isDarkMode ? Color.FromArgb(170, 170, 170) : Color.FromArgb(100, 100, 100)
             };
             this.Controls.Add(lblScreenMoveDesc);
@@ -289,19 +291,19 @@ namespace TaskbarAudioSwitcher.UI
                 Text = "Scroll volume step:",
                 Location = new Point((int)(20 * scale), (int)(555 * scale)),
                 Size = new Size((int)(170 * scale), (int)(20 * scale)),
-                Font = new Font("Segoe UI", 9f * scale, FontStyle.Bold)
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold)
             };
             this.Controls.Add(lblScrollStep);
 
             cmbScrollStep = new ComboBox
             {
-                Location = new Point((int)(200 * scale), (int)(553 * scale)),
-                Size = new Size((int)(145 * scale), (int)(24 * scale)),
+                Location = new Point((int)(200 * scale), (int)(552 * scale)),
+                Size = new Size((int)(160 * scale), (int)(26 * scale)),
                 DropDownStyle = ComboBoxStyle.DropDownList,
                 BackColor = controlBg,
                 ForeColor = textColor,
                 FlatStyle = FlatStyle.Flat,
-                Font = new Font("Segoe UI", 9f * scale)
+                Font = new Font("Segoe UI", 9f)
             };
             cmbScrollStep.Items.Add("1%");
             cmbScrollStep.Items.Add("2%");
@@ -320,19 +322,19 @@ namespace TaskbarAudioSwitcher.UI
                 Text = "Widget font size:",
                 Location = new Point((int)(20 * scale), (int)(590 * scale)),
                 Size = new Size((int)(170 * scale), (int)(20 * scale)),
-                Font = new Font("Segoe UI", 9f * scale, FontStyle.Bold)
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold)
             };
             this.Controls.Add(lblWidgetFontSize);
 
             cmbWidgetFontSize = new ComboBox
             {
-                Location = new Point((int)(200 * scale), (int)(588 * scale)),
-                Size = new Size((int)(145 * scale), (int)(24 * scale)),
+                Location = new Point((int)(200 * scale), (int)(587 * scale)),
+                Size = new Size((int)(160 * scale), (int)(26 * scale)),
                 DropDownStyle = ComboBoxStyle.DropDownList,
                 BackColor = controlBg,
                 ForeColor = textColor,
                 FlatStyle = FlatStyle.Flat,
-                Font = new Font("Segoe UI", 9f * scale)
+                Font = new Font("Segoe UI", 9f)
             };
             cmbWidgetFontSize.Items.Add("6 pt (Small)");
             cmbWidgetFontSize.Items.Add("7 pt");
@@ -354,19 +356,19 @@ namespace TaskbarAudioSwitcher.UI
                 Text = "Volume slider style:",
                 Location = new Point((int)(20 * scale), (int)(625 * scale)),
                 Size = new Size((int)(170 * scale), (int)(20 * scale)),
-                Font = new Font("Segoe UI", 9f * scale, FontStyle.Bold)
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold)
             };
             this.Controls.Add(lblSliderOrientation);
 
             cmbSliderOrientation = new ComboBox
             {
-                Location = new Point((int)(200 * scale), (int)(623 * scale)),
-                Size = new Size((int)(145 * scale), (int)(24 * scale)),
+                Location = new Point((int)(200 * scale), (int)(622 * scale)),
+                Size = new Size((int)(160 * scale), (int)(26 * scale)),
                 DropDownStyle = ComboBoxStyle.DropDownList,
                 BackColor = controlBg,
                 ForeColor = textColor,
                 FlatStyle = FlatStyle.Flat,
-                Font = new Font("Segoe UI", 9f * scale)
+                Font = new Font("Segoe UI", 9f)
             };
             cmbSliderOrientation.Items.Add("Horizontal (Default)");
             cmbSliderOrientation.Items.Add("Vertical (Compact)");
@@ -381,12 +383,12 @@ namespace TaskbarAudioSwitcher.UI
             btnSave = new Button
             {
                 Text = "Save",
-                Location = new Point((int)(155 * scale), (int)(670 * scale)),
-                Size = new Size((int)(90 * scale), (int)(30 * scale)),
+                Location = new Point((int)(165 * scale), (int)(670 * scale)),
+                Size = new Size((int)(95 * scale), (int)(32 * scale)),
                 BackColor = this.accentColor,
                 ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat,
-                Font = new Font("Segoe UI", 9f * scale, FontStyle.Bold)
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold)
             };
             btnSave.FlatAppearance.BorderSize = 0;
             btnSave.Click += BtnSave_Click;
@@ -396,12 +398,12 @@ namespace TaskbarAudioSwitcher.UI
             btnCancel = new Button
             {
                 Text = "Cancel",
-                Location = new Point((int)(255 * scale), (int)(670 * scale)),
-                Size = new Size((int)(90 * scale), (int)(30 * scale)),
+                Location = new Point((int)(265 * scale), (int)(670 * scale)),
+                Size = new Size((int)(95 * scale), (int)(32 * scale)),
                 BackColor = btnBg,
                 ForeColor = textColor,
                 FlatStyle = FlatStyle.Flat,
-                Font = new Font("Segoe UI", 9f * scale)
+                Font = new Font("Segoe UI", 9f)
             };
             btnCancel.FlatAppearance.BorderSize = 0;
             btnCancel.Click += (s, e) => { this.DialogResult = DialogResult.Cancel; this.Close(); };
@@ -481,22 +483,22 @@ namespace TaskbarAudioSwitcher.UI
                             {
                                 Text = name,
                                 Location = new Point((int)(10 * scale), y),
-                                Size = new Size((int)(225 * scale), (int)(24 * scale)),
+                                Size = new Size((int)(235 * scale), (int)(24 * scale)),
                                 Checked = selectedIds.Contains(devId),
                                 ForeColor = textColor,
                                 FlatStyle = FlatStyle.Flat,
-                                Font = new Font("Segoe UI", 9f * scale)
+                                Font = new Font("Segoe UI", 9f)
                             };
                             TextBox tb = new TextBox
                             {
-                                Location = new Point((int)(245 * scale), y + (int)(2 * scale)),
-                                Size = new Size((int)(45 * scale), (int)(20 * scale)),
+                                Location = new Point((int)(250 * scale), y + (int)(1 * scale)),
+                                Size = new Size((int)(55 * scale), (int)(22 * scale)),
                                 MaxLength = 3,
                                 Text = settings.GetDeviceNickname(devId, name),
                                 BackColor = isDarkMode ? Color.FromArgb(45, 45, 45) : Color.White,
                                 ForeColor = textColor,
                                 BorderStyle = isDarkMode ? BorderStyle.FixedSingle : BorderStyle.Fixed3D,
-                                Font = new Font("Segoe UI", 9f * scale)
+                                Font = new Font("Segoe UI", 9f)
                             };
 
                             pnlDevices.Controls.Add(cb);

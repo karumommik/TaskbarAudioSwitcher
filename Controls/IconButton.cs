@@ -92,8 +92,8 @@ namespace TaskbarAudioSwitcher.Controls
             }
 
             Font? fontToUse = null;
-            try { fontToUse = new Font("Segoe MDL2 Assets", 10f * scale); }
-            catch { fontToUse = new Font("Segoe UI", 10f * scale); }
+            try { fontToUse = new Font("Segoe MDL2 Assets", 10f); }
+            catch { fontToUse = new Font("Segoe UI", 10f); }
 
             using (fontToUse)
             {
@@ -120,7 +120,7 @@ namespace TaskbarAudioSwitcher.Controls
                         g.DrawString(Glyph, fontToUse, brush, new RectangleF(0, 2 * scale, Width, Height - 12 * scale), sfIcon);
 
                         // Draw 3-letter abbreviation at the bottom
-                        float badgeFontSize = Math.Max(4.5f, WidgetFontSize - 1.8f) * scale;
+                        float badgeFontSize = Math.Max(4.5f, WidgetFontSize - 1.8f);
                         using (var textFont = new Font("Segoe UI", badgeFontSize, FontStyle.Regular))
                         {
                             var sfText = new StringFormat

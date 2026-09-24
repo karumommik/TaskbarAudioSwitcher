@@ -45,7 +45,16 @@ To ensure 24/7 stability and prevent being flagged by antivirus software, this u
 
 ## 4. Release History & Changelog
 
-### v3.7.1 (Current Version)
+### v3.7.2-beta.1 (Current Version)
+This beta release resolves critical High-DPI (4K 200%) scaling and auto-hidden taskbar positioning issues.
+* **High-DPI Font Double-Scaling Fix:** Fixed an issue where fonts in `SettingsForm`, `AudioWidgetForm`, `IconButton`, and `MicrophoneButton` were scaled twice on high-DPI displays (e.g. 4K at 200% scaling). Font point sizes now scale natively via GDI+, preventing squashed, cropped, and cut-off text labels and dialog elements.
+* **Auto-Hidden Taskbar Positioning Fix:** Resolved an issue where enabling Windows "Automatically hide the taskbar" caused the widget to be pushed 50% below the bottom of the screen (off-screen clipping). Added automated auto-hide taskbar detection, docking the widget cleanly to the bottom edge of the display with proper margins.
+* **High-DPI System Tray Alignment Fix:** Removed erroneous coordinate division (`rectTray.Left / scale`) on physical screen pixels, ensuring the widget aligns flush next to the system tray and clock rather than drifting into the left half of the display.
+* **Initial Window Height Scale Fix:** Corrected initial widget window height initialization on startup, eliminating negative baseline offsets and clipped controls on 200% displays.
+* **Dynamic DPI Change Support:** Added `WM_DPICHANGED` message handling in `WndProc` to seamlessly recalculate layout and positioning when dragging between displays with different scaling factors.
+* **Settings & Update Dialog Polishing:** Enabled `AutoScaleMode.None` and standardized dialog `ClientSize` for pixel-perfect layout preservation across all Windows scaling percentages.
+
+### v3.7.1
 * **Unified Microphone Click Interaction:** Left-clicking the microphone icon opens the input device selection context menu to choose the default recording device; right-clicking instantly toggles system-wide microphone mute/unmute; mouse-wheel scrolling adjusts recording volume levels. Hover ToolTips dynamically indicate current mute status (`(Muted - Right-click: Unmute)`).
 * **Volume Percentage Display Toggles (Space Saving):** Added configurable toggles in `SettingsForm` (`Show master volume percentage text` and `Show pinned apps volume percentage text`). Disabling percentage text collapses numerical labels and automatically narrows the taskbar widget to save horizontal taskbar real estate.
 * **Expanded Pinned Applications (Limit Increased to 4):** Up to 4 active audio applications can now be pinned directly to the taskbar widget simultaneously from the expanded audio mixer panel.

@@ -14,9 +14,12 @@ namespace TaskbarAudioSwitcher.UI
 
         public UpdateForm(string currentVersion, string latestVersion, bool isDarkMode)
         {
+            float scale = TaskbarAudioSwitcher.Core.DpiHelper.GetScale(this.Handle);
             this.themeActiveColor = TaskbarAudioSwitcher.Core.ThemeHelper.GetAccentColor();
-            this.Text = "Uuendus saadaval";
-            this.Size = new Size(360, 200);
+            this.Text = "Update Available";
+            this.AutoScaleMode = AutoScaleMode.None;
+            this.Font = new Font("Segoe UI", 9f);
+            this.ClientSize = new Size((int)(380 * scale), (int)(200 * scale));
             this.FormBorderStyle = FormBorderStyle.None;
             this.StartPosition = FormStartPosition.CenterScreen;
             this.ShowInTaskbar = true;
@@ -50,11 +53,11 @@ namespace TaskbarAudioSwitcher.UI
             // Custom Title
             Label lblTitle = new Label
             {
-                Text = "Uus versioon on saadaval!",
+                Text = "New version available!",
                 Font = new Font("Segoe UI", 12f, FontStyle.Bold),
                 ForeColor = themeActiveColor,
-                Location = new Point(20, 20),
-                Size = new Size(320, 30),
+                Location = new Point((int)(20 * scale), (int)(20 * scale)),
+                Size = new Size((int)(340 * scale), (int)(30 * scale)),
                 TextAlign = ContentAlignment.MiddleLeft
             };
             this.Controls.Add(lblTitle);
@@ -63,13 +66,13 @@ namespace TaskbarAudioSwitcher.UI
             Label lblMessage = new Label
             {
                 Text = string.Format(
-                    "Märgati rakenduse uuemat versiooni GitHubis.\n\nSinu versioon:  v{0}\nUus versioon:   v{1}",
+                    "A newer version of the application was found on GitHub.\n\nYour version:   v{0}\nNew version:    v{1}",
                     currentVersion, latestVersion
                 ),
                 Font = new Font("Segoe UI", 9f),
                 ForeColor = themeTextColor,
-                Location = new Point(20, 60),
-                Size = new Size(320, 70),
+                Location = new Point((int)(20 * scale), (int)(58 * scale)),
+                Size = new Size((int)(340 * scale), (int)(75 * scale)),
                 TextAlign = ContentAlignment.TopLeft
             };
             this.Controls.Add(lblMessage);
@@ -77,13 +80,13 @@ namespace TaskbarAudioSwitcher.UI
             // Cancel Button
             Button btnCancel = new Button
             {
-                Text = "Sule",
+                Text = "Close",
                 Font = new Font("Segoe UI", 9f),
                 ForeColor = themeTextColor,
                 BackColor = Color.Transparent,
                 FlatStyle = FlatStyle.Flat,
-                Location = new Point(240, 145),
-                Size = new Size(100, 32),
+                Location = new Point((int)(250 * scale), (int)(145 * scale)),
+                Size = new Size((int)(110 * scale), (int)(34 * scale)),
                 Cursor = Cursors.Hand
             };
             btnCancel.FlatAppearance.BorderColor = themeBorderColor;
@@ -94,13 +97,13 @@ namespace TaskbarAudioSwitcher.UI
             // Action Button (GitHub)
             Button btnGitHub = new Button
             {
-                Text = "Ava GitHub",
+                Text = "Open GitHub",
                 Font = new Font("Segoe UI", 9f, FontStyle.Bold),
                 ForeColor = Color.White,
                 BackColor = themeActiveColor,
                 FlatStyle = FlatStyle.Flat,
-                Location = new Point(130, 145),
-                Size = new Size(100, 32),
+                Location = new Point((int)(130 * scale), (int)(145 * scale)),
+                Size = new Size((int)(110 * scale), (int)(34 * scale)),
                 Cursor = Cursors.Hand
             };
             btnGitHub.FlatAppearance.BorderSize = 0;
